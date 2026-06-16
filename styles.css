@@ -89,12 +89,18 @@ input{font:inherit}
 
 .flash-wrap{position:relative;flex:1;min-height:0;margin:6px 0}
 .edge-hint{position:absolute;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;letter-spacing:.3px;
-  opacity:.3;z-index:1;transition:opacity .15s;text-transform:uppercase;white-space:nowrap}
+  opacity:.3;z-index:2;transition:opacity .15s;text-transform:uppercase;white-space:nowrap}
 .edge-hint.left{left:6px;color:var(--warn);writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg)}
 .edge-hint.right{right:6px;color:var(--accent);writing-mode:vertical-rl}
 
-.swipe{position:absolute;inset:0;cursor:grab;touch-action:pan-y;will-change:transform}
+.swipe{position:absolute;inset:0;cursor:grab;touch-action:pan-y;will-change:transform;z-index:1}
 .swipe.dragging{cursor:grabbing}
+/* next-card layer, sits behind the swipe card and rises as it leaves */
+.peek{position:absolute;inset:0;z-index:0;pointer-events:none;transform:scale(.955) translateY(10px);
+  transition:transform .34s cubic-bezier(.2,.8,.2,1)}
+.peek.rise{transform:scale(1) translateY(0)}
+.peek .flash{box-shadow:0 14px 40px #0005}
+.peek .face.front{opacity:1}
 .flash{position:absolute;inset:0;border-radius:26px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 50px #0006}
 .face{position:absolute;inset:0;padding:14px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:opacity .26s}
 .face.front{background:linear-gradient(165deg,#1c2a55,#141d3a)}

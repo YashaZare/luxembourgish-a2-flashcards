@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
 <div id="app">
@@ -84,6 +84,19 @@
     <div class="flash-wrap" id="flashWrap">
       <div class="edge-hint left" id="hintLeft">✗ don't know</div>
       <div class="edge-hint right" id="hintRight">know it ✓</div>
+      <!-- the next card, always rendered behind so it shows instantly on swipe -->
+      <div class="peek" id="peek">
+        <div class="flash">
+          <div class="face front">
+            <div class="face-mid">
+              <div class="word" id="peekWord"></div>
+              <div class="ipa" id="peekIpa"></div>
+              <div class="base-form" id="peekBase"></div>
+            </div>
+            <div class="face-foot"><div class="tap-hint">tap here for context ▾</div></div>
+          </div>
+        </div>
+      </div>
       <div class="swipe" id="swipe">
         <div class="tint" id="tint"></div>
         <div class="stamp got" id="stampGot">KNOW IT ✓</div>
@@ -148,6 +161,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

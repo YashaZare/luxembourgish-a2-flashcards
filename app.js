@@ -261,6 +261,8 @@ function render(){
   $('#deckMeta').textContent = '';
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
+  // pre-render the NEXT card behind, so swiping reveals it instantly (no gap)
+  updatePeek(state.deck[state.idx+1]);
 }
 function setReveal(v){
   state.revealed=v;
@@ -297,18 +299,26 @@ function grade(verdict){               // 'got' | 'miss'
   showAnswerToast(c, verdict);
   state.animating=true;
   const sw=$('#swipe'), dir=verdict==='got'?1:-1;
+  $('#peek').classList.add('rise');     // the next card (already behind) rises to the front
   sw.style.transition='transform .34s ease-out, opacity .34s ease-out';
   sw.style.transform=`translateX(${dir*140}%) rotate(${dir*18}deg)`;
   sw.style.opacity='0';
   setTimeout(()=>{
     state.animating=false;
-    if(state.idx<state.deck.length-1){ state.idx++; render(); popIn(); }
+    $('#peek').classList.remove('rise');
+    if(state.idx<state.deck.length-1){ state.idx++; render(); }   // render() resets #swipe over the now-shown peek
     else done();
   }, 340);
 }
-function popIn(){
-  const sw=$('#swipe'); sw.style.transition='none'; sw.style.transform='scale(.96)'; sw.style.opacity='.4';
-  requestAnimationFrame(()=>{ sw.style.transition='transform .2s, opacity .2s'; sw.style.transform=''; sw.style.opacity=''; });
+function updatePeek(card){
+  const p=$('#peek'); if(!p) return;
+  if(!card){ p.style.visibility='hidden'; return; }
+  p.style.visibility='';
+  $('#peekWord').textContent = card.w;
+  $('#peekIpa').textContent = card.ip?`/${card.ip}/`:'';
+  if(card.lemma){ const label=card.pos==='VRB'?'infinitive':'base form';
+    $('#peekBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(card.lemma)}`; }
+  else $('#peekBase').innerHTML = '';
 }
 function next(){ if(state.idx<state.deck.length-1){state.idx++;render();} else done(); }
 function prev(){ if(state.idx>0){state.idx--;render();} }
