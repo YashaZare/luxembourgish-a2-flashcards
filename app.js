@@ -302,10 +302,23 @@ function showConfLine(on, cg, t){
   if(!on){ line.classList.remove('show'); line.style.opacity=''; return; }
   line.classList.add('show');
   // opacity follows how far the card has been dragged → grows in gradually, never pops
-  line.style.opacity = Math.min(Math.max(t==null?1:t*1.15,0),1);
-  const dot=$('#confDot'), lab=$('#confLabel'), top=((1-cg.f)*100)+'%';
+  line.style.opacity = Math.min(Math.max(t==null?1:t*1.2,0),1);
+  const f=cg.f, top=((1-f)*100)+'%';
+  // the EASY (top) and HARD (bottom) labels grow as you drop toward their end of the gauge
+  const easy=line.querySelector('.conf-cap.easy'), hard=line.querySelector('.conf-cap.hard');
+  if(easy){ easy.style.transform=`scale(${(0.7+f*0.85).toFixed(2)})`; easy.style.opacity=(0.4+f*0.6).toFixed(2); }
+  if(hard){ hard.style.transform=`scale(${(0.7+(1-f)*0.85).toFixed(2)})`; hard.style.opacity=(0.4+(1-f)*0.6).toFixed(2); }
+  const dot=$('#confDot'), lab=$('#confLabel');
   if(dot){ dot.style.top=top; dot.className='conf-dot '+cg.cls; }
   if(lab){ lab.style.top=top; lab.className='conf-label '+cg.cls; lab.textContent=cg.label; }
+}
+// brief centred flash on an up/down throw ("Perfected" / "No idea")
+function flyMsg(text, kind){
+  let el=$('#flyMsg');
+  if(!el){ el=document.createElement('div'); el.id='flyMsg'; el.className='fly-msg';
+    ($('#flashWrap')||document.body).appendChild(el); }
+  el.textContent=text; el.className='fly-msg '+(kind||'')+' show';
+  clearTimeout(state.flyT); state.flyT=setTimeout(()=>el.classList.remove('show'), 1000);
 }
 function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
   const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
@@ -345,6 +358,7 @@ function grade(verdict, srsGrade, flyDir){
   $('#peek').classList.add('rise');     // the next card (already behind) rises to the front
   sw.style.transition='transform .34s ease-out, opacity .34s ease-out';
   if(flyDir==='up'){ sw.style.transform='translateY(-135%) scale(.86)'; }
+  else if(flyDir==='down'){ sw.style.transform='translateY(135%) scale(.86)'; }
   else { const dir = verdict==='got'?1:-1; sw.style.transform=`translateX(${dir*140}%) rotate(${dir*18}deg)`; }
   sw.style.opacity='0';
   setTimeout(()=>{
@@ -428,8 +442,9 @@ function wireStudy(){
   // ---- swipe (pointer = touch + mouse) ----
   let dragging=false, deciding=false, axis=null, x0=0, y0=0, dx=0, dy=0, lastY=0, startedInHints=false;
   const THRESH=84, VTHRESH=74;
-  function resetStamp(){ const s=$('#stampGot'); s.style.opacity=0; s.className='stamp got'; s.textContent='KNOW IT ✓';
-    $('#stampMiss').style.opacity=0; }
+  function resetStamps(){ const s=$('#stampGot'), m=$('#stampMiss');
+    s.style.opacity=0; s.className='stamp got'; s.textContent='KNOW IT ✓';
+    m.style.opacity=0; m.className='stamp miss'; m.textContent='✗ AGAIN'; }
   // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
   // hints body must NOT collapse it
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
@@ -464,9 +479,16 @@ function wireStudy(){
     sw.style.transition='none'; sw.classList.add('dragging');
     try{ sw.setPointerCapture(e.pointerId); }catch(_){}
   }
-  // how committed the gesture currently is toward each outcome (0..)
-  function ratios(){
-    return { right: dx>0 ? dx/THRESH : 0, left: dx<0 ? -dx/THRESH : 0, up: dy<0 ? -dy/VTHRESH : 0 };
+  const DEAD=14;   // px of clear travel before a direction is intended
+  // which gesture the current drag means. Horizontal wins on any clear sideways travel, so a
+  // high diagonal to the RIGHT stays a confidence swipe (and keeps the gauge) rather than
+  // flipping to "perfect". Up/down only when the drag is essentially vertical.
+  function dragMode(){
+    if(dx>=DEAD) return 'right';
+    if(dx<=-DEAD) return 'left';
+    if(dy<=-DEAD) return 'up';
+    if(dy>=DEAD) return 'down';
+    return 'none';
   }
   function move(e){
     if(!deciding && !dragging) return;
@@ -480,43 +502,39 @@ function wireStudy(){
     if(!dragging) return;
     dx=ddx; dy=ddy;
     // the card floats with the finger in 2D the whole time — never snapped onto an axis.
-    // a light vertical damping keeps it feeling anchored without railing it.
-    sw.style.transform=`translate(${dx}px, ${dy*0.9}px) rotate(${dx*0.035}deg)`;
-    // the overlay reflects whichever outcome you've committed to most; opacity = that
-    // commitment, so it cross-fades smoothly as the finger moves between directions.
-    const R=ratios(), s=$('#stampGot');
-    if(R.up>=R.right && R.up>=R.left && R.up>0.02){
-      const t=Math.min(R.up,1);
-      tint.style.background='var(--accent)'; tint.style.opacity=t*0.30;
-      s.textContent='PERFECT ✓'; s.className='stamp got easy'; s.style.opacity=t;
-      $('#stampMiss').style.opacity=0; showConfLine(false);
-    } else if(R.right>=R.left && R.right>0.02){
-      const t=Math.min(R.right,1), cg=confFromY(lastY);
+    sw.style.transform=`translate(${dx}px, ${dy*0.92}px) rotate(${dx*0.035}deg)`;
+    const s=$('#stampGot'), miss=$('#stampMiss'), mode=dragMode();
+    if(mode==='right'){                       // confidence swipe — gauge always on while going right
+      const t=Math.min(dx/THRESH,1), cg=confFromY(lastY);
       showConfLine(true, cg, t);
       tint.style.background=cg.color; tint.style.opacity=t*0.30;
-      s.textContent=cg.label+' ✓'; s.className='stamp got '+cg.cls; s.style.opacity=t;
-      $('#stampMiss').style.opacity=0;
-    } else if(R.left>0.02){
-      const t=Math.min(R.left,1); showConfLine(false);
+      s.textContent=cg.label+' ✓'; s.className='stamp got '+cg.cls; s.style.opacity=t; miss.style.opacity=0;
+    } else if(mode==='left'){                  // don't know
+      const t=Math.min(-dx/THRESH,1); showConfLine(false);
       tint.style.background='var(--warn)'; tint.style.opacity=t*0.30;
-      $('#stampMiss').style.opacity=t; s.style.opacity=0;
-    } else {                                  // floating near the centre — no commitment yet
-      tint.style.opacity=0; s.style.opacity=0; $('#stampMiss').style.opacity=0; showConfLine(false);
+      miss.textContent="DON'T KNOW"; miss.className='stamp miss'; miss.style.opacity=t; s.style.opacity=0;
+    } else if(mode==='up'){                     // perfected
+      const t=Math.min(-dy/VTHRESH,1); showConfLine(false);
+      tint.style.background='var(--accent)'; tint.style.opacity=t*0.30;
+      s.textContent='PERFECTED ✓'; s.className='stamp got easy'; s.style.opacity=t; miss.style.opacity=0;
+    } else if(mode==='down'){                   // no idea
+      const t=Math.min(dy/VTHRESH,1); showConfLine(false);
+      tint.style.background='var(--warn)'; tint.style.opacity=t*0.30;
+      miss.textContent='NO IDEA'; miss.className='stamp miss down'; miss.style.opacity=t; s.style.opacity=0;
+    } else {                                    // floating near the centre — no commitment yet
+      tint.style.opacity=0; s.style.opacity=0; miss.style.opacity=0; showConfLine(false);
     }
   }
   function up(){
     const wasDragging=dragging, ax=axis;
     deciding=false; dragging=false; sw.classList.remove('dragging'); showConfLine(false);
     if(wasDragging && ax==='free'){
-      // resolve at the last moment: whichever direction you committed to most wins,
-      // and only if it passed its threshold — otherwise the card floats back.
-      const R=ratios(), best=Math.max(R.right, R.left, R.up);
-      if(best>=1){
-        if(best===R.up)        grade('got', 4, 'up');
-        else if(best===R.right) grade('got', confFromY(lastY).grade, 'right');
-        else                    grade('miss', 1, 'left');
-        resetStamp(); return;
-      }
+      // resolve at release. A clear sideways throw always wins (so high-right = a graded swipe);
+      // a vertical-only throw becomes perfected (up) / no idea (down).
+      if(dx>=THRESH){ grade('got', confFromY(lastY).grade, 'right'); resetStamps(); return; }
+      if(dx<=-THRESH){ grade('miss', 1, 'left'); resetStamps(); return; }
+      if(Math.abs(dx)<THRESH && dy<=-VTHRESH){ flyMsg('Perfected ✓','good'); grade('got', 4, 'up'); resetStamps(); return; }
+      if(Math.abs(dx)<THRESH && dy>=VTHRESH){ flyMsg('No idea — back soon ↻','bad'); grade('miss', 1, 'down'); resetStamps(); return; }
       // not committed enough → fall through and ease back to centre
     }
     if(!wasDragging && ax===null && !startedInHints){    // a genuine tap, not on the tips
@@ -533,7 +551,7 @@ function wireStudy(){
       }
     }
     sw.style.transition='transform .34s cubic-bezier(.2,.85,.25,1), opacity .25s'; sw.style.transform='';
-    tint.style.opacity=0; resetStamp();
+    tint.style.opacity=0; resetStamps();
   }
   sw.addEventListener('pointerdown',down);
   sw.addEventListener('pointermove',move);

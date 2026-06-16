@@ -395,3 +395,17 @@ input{font:inherit}
 .danger-btn{background:var(--warn);color:#fff;border:none}
 .danger-btn:disabled{opacity:.4}
 @media (prefers-color-scheme:light){ .sheet-scrim{background:#0006} }
+
+/* extra swipe directions + reactive confidence gauge */
+.edge-hint.bottom{top:auto;bottom:10px;left:50%;transform:translateX(-50%);color:var(--warn)}
+.conf-cap{transform-origin:right center;transition:transform .1s ease, opacity .1s ease}
+.stamp.miss.down{right:auto;left:50%;transform:translateX(-50%) rotate(0);top:auto;bottom:40px;color:var(--warn);border-color:var(--warn)}
+/* quick "Perfected / No idea" flash on a vertical throw */
+.fly-msg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.8);z-index:30;pointer-events:none;
+  font-size:22px;font-weight:900;letter-spacing:.3px;padding:12px 22px;border-radius:16px;
+  background:#0b1020e6;color:#fff;box-shadow:0 10px 34px #0007;opacity:0;
+  transition:opacity .16s ease, transform .26s cubic-bezier(.2,1.4,.4,1)}
+.fly-msg.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.fly-msg.good{color:var(--accent);box-shadow:0 10px 34px #34d3a655}
+.fly-msg.bad{color:var(--warn);box-shadow:0 10px 34px #ff6b8a55}
+@media (prefers-color-scheme:light){ .fly-msg{background:#fffffff2;color:#0b1020} }
