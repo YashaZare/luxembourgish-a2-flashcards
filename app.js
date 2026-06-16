@@ -641,6 +641,29 @@ function show(id){
 }
 
 // ============================ MATCH GAME ============================
+// tiny synthesised sound effects (Web Audio — no files). A sequence of notes with
+// a soft attack/decay envelope so there are no clicks.
+function beep(freqs, opt){
+  const ctx=ensureCtx(); if(!ctx) return; opt=opt||{};
+  const type=opt.type||'sine', dur=opt.dur||0.12, gap=opt.gap!=null?opt.gap:dur*0.9, vol=opt.vol!=null?opt.vol:0.16;
+  const t0=ctx.currentTime;
+  (Array.isArray(freqs)?freqs:[freqs]).forEach((f,i)=>{
+    const s=t0+i*gap, osc=ctx.createOscillator(), g=ctx.createGain();
+    osc.type=type; osc.frequency.setValueAtTime(f,s);
+    if(opt.bend) osc.frequency.exponentialRampToValueAtTime(Math.max(40,f*opt.bend), s+dur);
+    g.gain.setValueAtTime(0.0001,s); g.gain.exponentialRampToValueAtTime(vol,s+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+dur);
+    osc.connect(g).connect(ctx.destination); osc.start(s); osc.stop(s+dur+0.03);
+  });
+}
+const SFX={
+  select:   ()=>beep(680,            {type:'triangle', dur:0.07, vol:0.13}),
+  unselect: ()=>beep(380,            {type:'triangle', dur:0.07, vol:0.09}),
+  match:    ()=>beep([620,930],      {type:'sine',     dur:0.12, gap:0.07, vol:0.16}),
+  fail:     ()=>beep(180,            {type:'square',   dur:0.16, vol:0.09, bend:0.7}),
+  win:      ()=>beep([523,659,784,1047],{type:'sine',  dur:0.16, gap:0.11, vol:0.18}),
+  lose:     ()=>beep([392,311,247],  {type:'sine',     dur:0.24, gap:0.16, vol:0.16})
+};
 function gameCols(n){ return n<=10?2 : n<=20?3 : n<=30?4 : 5; }   // tiles → columns
 function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0]:t)||''; }
 function updateGameBest(){
@@ -681,15 +704,16 @@ function renderGameGrid(){
 }
 function onTileTap(t,b){
   const g=state.game; if(!g||g.done||t.matched) return;
-  if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); return; }
-  if(g.sel===t){ b.classList.remove('sel'); g.sel=null; g.selEl=null; return; }
+  if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); return; }
+  if(g.sel===t){ b.classList.remove('sel'); g.sel=null; g.selEl=null; SFX.unselect(); return; }
   if(g.sel.id===t.id && g.sel.kind!==t.kind){          // a correct pair
     t.matched=true; g.sel.matched=true;
     b.classList.add('matched'); g.selEl.classList.add('matched');
     b.classList.remove('sel'); g.selEl.classList.remove('sel');
     g.matched++; g.sel=null; g.selEl=null;
-    if(g.matched>=g.pairs) winGame();
+    if(g.matched>=g.pairs) winGame(); else SFX.match();
   } else {                                             // wrong → flash both, deselect
+    SFX.fail();
     const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
     g.sel=null; g.selEl=null;
     setTimeout(()=>{ a.classList.remove('wrong'); bb.classList.remove('wrong'); }, 480);
@@ -714,10 +738,11 @@ function winGame(){
   const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
+  SFX.win();
   showGameResult(true, elapsed, isBest);
 }
 function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
-  const bar=$('#gameBar'); if(bar) bar.style.width='0%'; showGameResult(false, g.matched); }
+  const bar=$('#gameBar'); if(bar) bar.style.width='0%'; SFX.lose(); showGameResult(false, g.matched); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
   el.innerHTML = `<div class="gr-card"><div class="gr-emoji">${won?'🎉':'⏱️'}</div>`+
