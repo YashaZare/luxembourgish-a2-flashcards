@@ -193,6 +193,8 @@ function render(skipPeek){
     const label = c.pos==='VRB' ? 'infinitive' : 'base form';
     $('#frontBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(c.lemma)}`;
   } else { $('#frontBase').innerHTML = ''; }
+  const hasAudio = !!audioId(c);
+  $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
 
   const r=state.range;
   // pages + types summary (hidden until the hint is opened)
@@ -378,12 +380,14 @@ function wireStudy(){
   // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
   // hints body must NOT collapse it
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
+  $('#frontSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
+  $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
 
   function down(e){
     if(state.animating) return;
     if(e.target.closest && e.target.closest('a')) return;  // let links (e.g. LOD) work natively
     // let the open hints scroll/tap freely, and let the toggle handle itself
-    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle'))) return;
+    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle') || e.target.closest('.say'))) return;
     if(state.tutorial) stopTutorial();
     dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
     sw.style.transition='none'; sw.classList.add('dragging');
@@ -456,6 +460,20 @@ function relevantLesson(c){
   const pages=c.pg.slice().sort((x,y)=>x-y);
   if(r){ const inR=pages.find(p=>p>=r.a&&p<=r.b); if(inR!=null){ const l=lessonOfPage(inR); if(l) return l; } }
   const l0=lessonOfPage(pages[0]); return l0||(c.ls&&c.ls[0])||'';
+}
+// ---- pronunciation audio (LOD, self-hosted with LOD stream fallback) ----
+const audioEl = new Audio();
+function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
+function playAudio(card){
+  const id = audioId(card); if(!id) return;
+  let fellBack=false;
+  audioEl.onerror = ()=>{ if(fellBack) return; fellBack=true;   // local missing → stream from LOD
+    audioEl.src='https://lod.lu/uploads/AAC/'+id+'.m4a'; audioEl.play().catch(()=>{}); };
+  audioEl.onplaying = ()=>$$('.say').forEach(b=>b.classList.add('playing'));
+  audioEl.onended = audioEl.onpause = ()=>$$('.say').forEach(b=>b.classList.remove('playing'));
+  try{ audioEl.pause(); audioEl.currentTime=0; }catch(e){}
+  audioEl.src='audio/'+id+'.m4a';
+  audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function esc(s){ return (s+'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }

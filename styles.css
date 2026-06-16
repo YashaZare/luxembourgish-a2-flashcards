@@ -149,6 +149,13 @@ input{font:inherit}
 .base-form{font-size:13.5px;color:var(--brand2);font-weight:700}
 .base-form .bf-label{color:var(--muted);font-weight:500}
 .base-form:empty{display:none}
+.say{margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;
+  color:var(--brand2);background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+  padding:8px 16px;min-height:40px;-webkit-tap-highlight-color:transparent}
+.say[hidden]{display:none}
+.say:active{transform:scale(.96)}
+.say.playing{color:var(--accent);border-color:#1d5a48;background:#10362c}
+@media (prefers-color-scheme:light){ .say{background:#eef3ff} .say.playing{background:#eafaf4;color:#1aa67e} }
 .lod-link{font-size:13px}
 .lod-link:empty{display:none}
 .lod-link a{color:var(--brand2);font-weight:700;text-decoration:none;border-bottom:1px solid #7aa2ff55;padding:2px 0}

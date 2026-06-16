@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=18">
+<link rel="stylesheet" href="styles.css?v=19">
 </head>
 <body>
 <div id="app">
@@ -106,6 +106,7 @@
             <div class="face-mid">
               <div class="word" id="frontWord"></div>
               <div class="ipa" id="frontIpa"></div>
+              <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊 listen</button>
               <div class="base-form" id="frontBase"></div>
             </div>
             <div class="hints" id="frontHints"></div>
@@ -121,6 +122,7 @@
               <div class="homo" id="backHomo"></div>
             </div>
             <div class="face-foot">
+              <button class="say" id="backSay" type="button" aria-label="Play pronunciation" hidden>🔊 listen</button>
               <div class="lod-link" id="backLod"></div>
               <div class="tap-hint">swipe to grade</div>
               <div class="meta footnote" id="backMeta"></div>
@@ -161,6 +163,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=18"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
