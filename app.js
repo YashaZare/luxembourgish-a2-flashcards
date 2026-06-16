@@ -604,9 +604,9 @@ function renderMemory(){
   const btn=$('#reviewDueBtn'), stats=$('#memStats');
   bar.hidden=false;                       // always visible now (carries the Progress entry point)
   if(stats) stats.innerHTML = t.seen===0
-    ? `🧠 <span class="mem-empty">No words studied yet — tap Start to begin</span>`
+    ? `🧠 <span class="mem-empty">Nothing studied yet</span>`
     : `🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
-      (t.due?` · <span class="due">🔁 ${t.due} due</span>`:` · all reviewed ✓`);
+      (t.due?` · <span class="due">${t.due} due</span>`:``);
   if(btn){ btn.hidden = !t.due; $('#dueCount').textContent = t.due; }
 }
 function startReviewDue(){
