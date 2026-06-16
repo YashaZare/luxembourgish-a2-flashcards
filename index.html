@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=37">
+<link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
 <div id="app">
@@ -98,8 +98,7 @@
          Collapses when the context drawer opens so the card can grow up into its space. -->
     <div class="top-row" id="topRow">
       <button class="last-word" id="lastWord" type="button" aria-label="Go to previous word"></button>
-      <button class="top-box" id="playFab" type="button" aria-label="Auto-play pronunciation">🔊</button>
-      <button class="top-box" id="reshuffleBtn" type="button" aria-label="Reshuffle deck">⟳</button>
+      <button class="top-box" id="settingsBtn" type="button" aria-label="Settings">⚙️</button>
     </div>
 
     <div class="flash-wrap" id="flashWrap">
@@ -169,6 +168,24 @@
         <div class="tut-text">Swipe <b class="g">right if you know it</b> · <b class="r">left if you don't</b><br><span class="tut-sub">drop higher = easier · swipe ↑ for perfect</span></div>
       </div>
     </div>
+
+    <!-- study settings sheet (slides up from the bottom) -->
+    <div class="sheet-scrim" id="settingsScrim" hidden></div>
+    <div class="sheet" id="studySettings" hidden role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Settings</div>
+      <div class="set-block">
+        <div class="set-label">Audio</div>
+        <div class="seg3" id="audioSeg">
+          <button type="button" data-mode="0">🔇<span>Off</span></button>
+          <button type="button" data-mode="1">🔊<span>Auto</span></button>
+          <button type="button" data-mode="2">🎧<span>Listen</span></button>
+        </div>
+        <div class="set-hint" id="audioHint"></div>
+      </div>
+      <button class="menu-item" id="setReshuffle">🔀 Reshuffle deck</button>
+      <div class="menu-foot">More settings coming soon</div>
+    </div>
   </section>
 
   <!-- DONE SCREEN -->
@@ -212,8 +229,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=37"></script>
-<script src="progress.js?v=37"></script>
-<script src="app.js?v=37"></script>
+<script src="srs.js?v=38"></script>
+<script src="progress.js?v=38"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>

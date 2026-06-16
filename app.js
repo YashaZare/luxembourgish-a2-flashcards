@@ -438,7 +438,6 @@ function wireStudy(){
   // tapping the previous-word box goes back a card
   if($('#lastWord')) $('#lastWord').onclick = ()=>{ stopTutorial(); prev(); };
   $('#backBtn').onclick = ()=>{ stopTutorial(); exitStudy(); };
-  $('#reshuffleBtn').onclick = ()=>{ state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial(); };
   $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); playTutorial(); };
   $('#newDeck').onclick = ()=>exitStudy();
   $('#reviewMissed').onclick = ()=>{
@@ -461,13 +460,17 @@ function wireStudy(){
   $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   // listening-first cue (big speaker on the audio-only front) → (re)play the word
   if($('#listenCue')) $('#listenCue').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
-  // top button cycles the 3 audio modes: silent → auto-play → listening-first
-  if($('#playFab')) $('#playFab').onclick = (e)=>{
-    e.stopPropagation();
-    state.audioMode = (state.audioMode + 1) % 3;
+  // ---- settings sheet ----
+  if($('#settingsBtn')) $('#settingsBtn').onclick = openStudySettings;
+  if($('#settingsScrim')) $('#settingsScrim').onclick = closeSheets;
+  $$('#audioSeg button').forEach(b=> b.onclick = ()=>{
+    state.audioMode = +b.dataset.mode;
     if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;
     persist(); syncPlayFab();
     if(state.audioMode>=1) playAudio(state.deck[state.idx]);   // hear it right away on switch
+  });
+  if($('#setReshuffle')) $('#setReshuffle').onclick = ()=>{
+    closeSheets(); state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial();
   };
   // example-sentence speakers are rendered into card HTML each turn → delegate
   flash.addEventListener('click', (e)=>{
@@ -772,11 +775,16 @@ function startScopedDeck(cards, mode, scope){
 }
 
 // ---- sheets / menu ----
-function openSheet(id,scrim){ const s=$('#'+id), sc=$('#'+scrim); sc.hidden=false; s.hidden=false;
+function openSheet(id,scrim){ clearTimeout(state._sheetT); const s=$('#'+id), sc=$('#'+scrim);
+  sc.hidden=false; s.hidden=false;
   void s.offsetWidth;                       // commit the off-screen state, then transition in
   sc.classList.add('show'); s.classList.add('show'); }
-function closeSheets(){ ['drillSheet','monMenu'].forEach(id=>{const s=$('#'+id); if(s){s.classList.remove('show'); s.hidden=true;}});
-  ['drillScrim','menuScrim'].forEach(id=>{const s=$('#'+id); if(s){s.classList.remove('show'); s.hidden=true;}}); }
+// close every open sheet/scrim, animating them out, then hide once the transition ends
+function closeSheets(){
+  $$('.sheet.show, .sheet-scrim.show').forEach(s=>s.classList.remove('show'));
+  clearTimeout(state._sheetT);
+  state._sheetT=setTimeout(()=>$$('.sheet, .sheet-scrim').forEach(s=>{ if(!s.classList.contains('show')) s.hidden=true; }), 280);
+}
 function openMenu(){
   const t=SRS.store.totals();
   $('#monMenu').innerHTML=`<div class="sh-handle"></div><div class="sh-title">Options</div>`+
@@ -869,21 +877,19 @@ async function playUrls(urls, onStart, onEnd){
   onEnd&&onEnd(); return false;
 }
 function clearPlaying(){ $$('.say.playing,.exsay.playing').forEach(b=>b.classList.remove('playing')); }
-// the top button cycles audio modes. It also flips the whole study screen into
-// "listening-first" (mode 2): the card front hides the spelling and shows a 🎧 cue.
+// audio mode 2 ("listening-first") flips the study screen into an audio-only front.
 const AUDIO_MODES = [
-  { icon:'🔇', cls:'',          label:'Audio off — tap for auto-play' },
-  { icon:'🔊', cls:'on',        label:'Auto-play on — tap for listening-first' },
-  { icon:'🎧', cls:'on listen', label:'Listening-first — tap for audio off' }
+  { hint:'Silent — tap a speaker on the card to hear a word.' },
+  { hint:'Auto-play — each new card speaks automatically.' },
+  { hint:'Listening-first — the spelling is hidden and played; tap the card to reveal it.' }
 ];
-function syncPlayFab(){
-  const m = state.audioMode||0, a = AUDIO_MODES[m];
+function syncPlayFab(){   // keeps its name; now reflects mode in the settings sheet
+  const m = state.audioMode||0;
   const study=$('#study'); if(study) study.classList.toggle('listen-mode', m===2);
-  const fab=$('#playFab'); if(!fab) return;
-  fab.className = 'top-box ' + a.cls;
-  fab.textContent = a.icon;
-  fab.setAttribute('aria-label', a.label);
+  $$('#audioSeg button').forEach(b=>b.classList.toggle('on', +b.dataset.mode===m));
+  const hint=$('#audioHint'); if(hint) hint.textContent = AUDIO_MODES[m].hint;
 }
+function openStudySettings(){ syncPlayFab(); openSheet('studySettings','settingsScrim'); }
 function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
 function playAudio(card){
   const id = audioId(card); if(!id) return;
