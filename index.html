@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=38">
+<link rel="stylesheet" href="styles.css?v=39">
 </head>
 <body>
 <div id="app">
@@ -139,6 +139,8 @@
               <div class="base-form" id="frontBase"></div>
               <!-- listening-first: replaces the word; tap to (re)play, then tap the card to reveal -->
               <button class="listen-cue" id="listenCue" type="button" aria-label="Play pronunciation">🎧<span class="lc-t">tap to hear · then tap card to reveal</span></button>
+              <!-- reverse direction: the meaning is the prompt here -->
+              <div class="front-meaning" id="frontMeaning"></div>
             </div>
             <div class="hints" id="frontHints"></div>
             <div class="face-foot">
@@ -182,6 +184,10 @@
           <button type="button" data-mode="2">🎧<span>Listen</span></button>
         </div>
         <div class="set-hint" id="audioHint"></div>
+      </div>
+      <div class="set-block">
+        <div class="set-label">Direction</div>
+        <label class="switch set-switch"><span class="sw-label">Reverse direction<small>meaning → Lëtzebuergesch (production)</small></span><input type="checkbox" id="reverseToggle"><span></span></label>
       </div>
       <button class="menu-item" id="setReshuffle">🔀 Reshuffle deck</button>
       <div class="menu-foot">More settings coming soon</div>
@@ -229,8 +235,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=38"></script>
-<script src="progress.js?v=38"></script>
-<script src="app.js?v=38"></script>
+<script src="srs.js?v=39"></script>
+<script src="progress.js?v=39"></script>
+<script src="app.js?v=39"></script>
 </body>
 </html>

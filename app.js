@@ -23,6 +23,7 @@ const state = {
   range: null, // {a,b} pages being studied
   results: {}, // word -> 'got' | 'miss'
   audioMode: 1, // audio mode: 0 = silent (tap to play) · 1 = auto-play · 2 = listening-first
+  reverse: false, // reverse direction: meaning → Lëtzebuergesch
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -195,6 +196,18 @@ function start(){
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
+// translation lines (DE/FR/EN…) for a card. `big` styles them larger (used as the
+// reverse-direction prompt on the front).
+function answerLinesHTML(c, langs, big){
+  return langs.map(l=>{
+    const tr=(c.tr&&c.tr[l])||null;
+    let arr=Array.isArray(tr)?tr:(tr?[tr]:[]);
+    if(big) arr=arr.slice(0,2);                      // reverse prompt: keep it to the primary meaning(s)
+    const trv=arr.length?arr.join(', '):null;
+    return `<div class="ln${big?' big':''}"><span class="flag">${l.toUpperCase()}</span>`+
+      (trv?`<span class="tr">${esc(trv)}</span>`:`<span class="clar">— no translation —</span>`)+`</div>`;
+  }).join('');
+}
 function render(skipPeek){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
@@ -214,7 +227,8 @@ function render(skipPeek){
   if($('#listenCue')) $('#listenCue').hidden = !hasAudio;
   // auto-play when a new card appears (auto-play or listening-first modes).
   // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
-  if(hasAudio && state.audioMode>=1) playAudio(c);
+  // In reverse mode the front is the meaning, so we play the Lëtzebuergesch on reveal instead.
+  if(hasAudio && state.audioMode>=1 && !state.reverse) playAudio(c);
 
   const r=state.range;
   // pages + types summary (hidden until the hint is opened)
@@ -252,15 +266,10 @@ function render(skipPeek){
   // back
   $('#backPos').textContent = c.pos||'';
   const langs=[...state.selLangs].filter(l=>d.langs.includes(l));
-  const ans=$('#backAnswer'); ans.innerHTML='';
-  langs.forEach(l=>{
-    const ln=document.createElement('div'); ln.className='ln';
-    const tr=(c.tr&&c.tr[l])||null;
-    const trv = Array.isArray(tr)?tr.join(', '):(tr?String(tr):null);
-    ln.innerHTML = `<span class="flag">${l.toUpperCase()}</span>`+
-      (trv? `<span class="tr">${esc(trv)}</span>` : `<span class="clar">— no translation —</span>`);
-    ans.appendChild(ln);
-  });
+  $('#backAnswer').innerHTML = answerLinesHTML(c, langs);
+  // reverse direction: the meaning is the PROMPT (front), the Lëtzebuergesch is the answer (back)
+  if($('#frontMeaning')) $('#frontMeaning').innerHTML =
+    `<div class="fm-q">→ in Lëtzebuergesch?</div>` + answerLinesHTML(c, langs, true);
   const exBack = (c.ex && c.ex.length>1) ? c.ex[1] : (c.ex && c.ex[0]);
   $('#backEx').innerHTML = exBack ? `<span class="exl">e.g.</span> ${exItemHTML(exBack,c.w)}` : '';
   // homonym reminder: this word also exists with a different capitalisation + meaning
@@ -290,6 +299,8 @@ function setReveal(v){
   const f=$('#flash'); f.classList.toggle('revealed',v);
   f.querySelector('.front').setAttribute('aria-hidden', v);
   f.querySelector('.back').setAttribute('aria-hidden', !v);
+  // reverse mode: hearing the Lëtzebuergesch is the payoff — play it on reveal
+  if(v && state.reverse && state.audioMode>=1){ const c=state.deck[state.idx]; if(c && audioId(c)) playAudio(c); }
 }
 function reveal(){ setReveal(!state.revealed); }
 function frontFace(){ return document.querySelector('#flash .face.front'); }
@@ -329,7 +340,7 @@ function flyMsg(text, kind){
 function setContextOpen(open){ $('#study').classList.toggle('context-open', open); }
 function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open'); setContextOpen(false);
   const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
-function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open'); setContextOpen(open);
+function toggleHints(){ if(state.reverse) return; const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open'); setContextOpen(open);
   const t=$('#frontHintToggle'); if(t) t.textContent= open?'tap to hide ▴':'tap here for context ▾'; }
 function resetSwipe(){
   const sw=$('#swipe'); if(!sw) return;
@@ -469,6 +480,10 @@ function wireStudy(){
     persist(); syncPlayFab();
     if(state.audioMode>=1) playAudio(state.deck[state.idx]);   // hear it right away on switch
   });
+  if($('#reverseToggle')) $('#reverseToggle').onchange = ()=>{
+    state.reverse = $('#reverseToggle').checked;
+    persist(); syncPlayFab(); render();   // re-render the current card in the new direction
+  };
   if($('#setReshuffle')) $('#setReshuffle').onclick = ()=>{
     closeSheets(); state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial();
   };
@@ -883,11 +898,16 @@ const AUDIO_MODES = [
   { hint:'Auto-play — each new card speaks automatically.' },
   { hint:'Listening-first — the spelling is hidden and played; tap the card to reveal it.' }
 ];
-function syncPlayFab(){   // keeps its name; now reflects mode in the settings sheet
+function syncPlayFab(){   // keeps its name; now reflects mode + direction in the settings sheet
   const m = state.audioMode||0;
-  const study=$('#study'); if(study) study.classList.toggle('listen-mode', m===2);
+  const study=$('#study');
+  if(study){
+    study.classList.toggle('reverse-mode', !!state.reverse);
+    study.classList.toggle('listen-mode', m===2 && !state.reverse);   // listening-first needs the LB front
+  }
   $$('#audioSeg button').forEach(b=>b.classList.toggle('on', +b.dataset.mode===m));
   const hint=$('#audioHint'); if(hint) hint.textContent = AUDIO_MODES[m].hint;
+  if($('#reverseToggle')) $('#reverseToggle').checked = !!state.reverse;
 }
 function openStudySettings(){ syncPlayFab(); openSheet('studySettings','settingsScrim'); }
 function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
@@ -927,7 +947,7 @@ function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
     onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
-    audioMode:state.audioMode };
+    audioMode:state.audioMode, reverse:state.reverse };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
@@ -949,6 +969,7 @@ function restoreSettings(){
   }
   if(typeof s.onlyTr==='boolean') $('#onlyTranslated').checked=s.onlyTr;
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
+  if(typeof s.reverse==='boolean') state.reverse = s.reverse;
   if(typeof s.audioMode==='number') state.audioMode = s.audioMode;
   else if(typeof s.autoplay==='boolean') state.audioMode = s.autoplay?1:0;   // migrate old setting
   if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;

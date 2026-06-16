@@ -431,3 +431,29 @@ input{font:inherit}
 .seg3 button:active{transform:scale(.96)}
 .seg3 button.on{background:var(--brand);color:var(--on-mint);box-shadow:var(--sh-sm)}
 .set-hint{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.45;min-height:30px}
+
+/* ---- reverse direction (meaning → Lëtzebuergesch) ---- */
+.front-meaning{display:none;flex-direction:column;align-items:center;gap:10px;width:100%}
+.front-meaning .fm-q{font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--brand2);text-transform:uppercase;margin-bottom:4px}
+.front-meaning .ln{display:flex;align-items:baseline;gap:10px;justify-content:center;flex-wrap:wrap}
+.front-meaning .ln .flag{font-size:13px;color:var(--muted);font-weight:700;min-width:30px;text-align:right}
+.front-meaning .ln .tr{font-size:clamp(24px,7vw,34px);font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.front-meaning .ln .clar{color:var(--muted);font-size:14px}
+/* in reverse mode hide the Lëtzebuergesch on the front, show the meaning + the LB on the back */
+#study.reverse-mode .face.front .word,
+#study.reverse-mode .face.front .ipa,
+#study.reverse-mode .face.front .base-form,
+#study.reverse-mode .face.front .say,
+#study.reverse-mode .face.front .listen-cue,
+#study.reverse-mode .peek .face.front .word,
+#study.reverse-mode .peek .face.front .ipa,
+#study.reverse-mode .peek .face.front .base-form,
+#study.reverse-mode .peek .face.front .say{display:none}
+#study.reverse-mode .swipe .face.front .front-meaning{display:flex}
+#study.reverse-mode .peek .face.front .listen-cue.static{display:inline-flex}
+#study.reverse-mode .face.back .bw{display:block}
+#study.reverse-mode #frontHintToggle{visibility:hidden;pointer-events:none}   /* context would spoil */
+/* reverse toggle row in the settings sheet */
+.set-switch{min-height:0;padding:2px 0}
+.sw-label{display:flex;flex-direction:column;gap:2px}
+.sw-label small{font-size:11.5px;font-weight:500;color:var(--muted)}
