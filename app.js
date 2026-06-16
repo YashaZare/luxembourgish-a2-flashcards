@@ -40,7 +40,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '5';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '6';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
@@ -189,6 +189,11 @@ function render(){
   $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
+  // base/dictionary form: the IPA is the lemma's, so when the word is an inflected form show its base
+  if(c.lemma){
+    const label = c.pos==='VRB' ? 'infinitive' : 'base form';
+    $('#frontBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(c.lemma)}`;
+  } else { $('#frontBase').innerHTML = ''; }
   // hints drawer: example sentences (context) — shown on tapping the bottom, NOT the answer
   const exs=(c.ex||[]).slice(0,2);
   $('#frontHints').innerHTML = exs.length
