@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=30">
+<link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
 <div id="app">
@@ -22,10 +22,13 @@
       <p class="sub">Schwätzt Dir Lëtzebuergesch? <b>A2</b></p>
     </header>
 
-    <!-- spaced-repetition memory summary (hidden until you've studied something) -->
+    <!-- spaced-repetition memory summary + progress entry point -->
     <div class="mem-bar" id="memBar" hidden>
       <div class="mem-stats" id="memStats"></div>
-      <button class="mem-review" id="reviewDueBtn" type="button" hidden>🔁 Review <b id="dueCount">0</b> due</button>
+      <div class="mem-actions">
+        <button class="mem-review" id="reviewDueBtn" type="button" hidden>🔁 Review <b id="dueCount">0</b> due</button>
+        <button class="mem-progress" id="progressBtn" type="button">📊 Progress</button>
+      </div>
     </div>
 
     <div class="card-panel">
@@ -179,9 +182,35 @@
     </div>
   </section>
 
+  <!-- PROGRESS / HEATMAP SCREEN -->
+  <section id="monitor" class="screen hidden">
+    <header class="mon-head">
+      <button class="icon-btn" id="monBack" aria-label="Back to setup">‹</button>
+      <h2>Progress</h2>
+      <button class="icon-btn" id="monMenuBtn" aria-label="Options">⋯</button>
+    </header>
+    <div class="mon-scroll" id="monScroll">
+      <div class="mon-summary" id="monSummary"></div>
+      <div class="mon-seg" id="monSeg">
+        <button data-view="pages" class="on" type="button">Pages</button>
+        <button data-view="lessons" type="button">Lessons</button>
+        <button data-view="types" type="button">Word types</button>
+      </div>
+      <div class="mon-legend" id="monLegend"></div>
+      <div class="mon-body" id="monBody"></div>
+    </div>
+    <!-- drill-down sheet -->
+    <div class="sheet-scrim" id="drillScrim" hidden></div>
+    <div class="sheet" id="drillSheet" hidden aria-modal="true" role="dialog"></div>
+    <!-- options / reset menu -->
+    <div class="sheet-scrim" id="menuScrim" hidden></div>
+    <div class="sheet" id="monMenu" hidden aria-modal="true" role="dialog"></div>
+  </section>
+
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="srs.js?v=31"></script>
+<script src="progress.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

@@ -80,11 +80,17 @@
 
   // ---- on-device store -----------------------------------------------------
   const KEY = 'lb_a2_srs_v1';
-  let DB = { v: 1, cards: {} };
+  let DB = { v: 2, cards: {}, activity: {} };
   let saveTimer = null;
 
+  // forward-only, additive migrations (never rename/remove per-word fields)
+  function migrate(db) {
+    if (!db.v || db.v < 2) { db.v = 2; if (!db.activity) db.activity = {}; }
+    if (!db.activity) db.activity = {};
+    return db;
+  }
   function load() {
-    try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.cards) DB = r; } catch (e) {}
+    try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.cards) DB = migrate(r); } catch (e) {}
   }
   function save() {
     saveTimer = null;
@@ -94,10 +100,42 @@
 
   function get(word) { return DB.cards[word] || null; }
   function grade(word, g, now) {
+    now = now || Date.now();
     const c = schedule(get(word), g, now);
     DB.cards[word] = c;
+    logReview(now);
     saveSoon();
     return c;
+  }
+  // lightweight daily activity log (reviews per local day) → powers streak + "last studied"
+  function dayKey(ms) {
+    const d = new Date(ms);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function logReview(now) { const k = dayKey(now); DB.activity[k] = (DB.activity[k] || 0) + 1; }
+  function streak(now) {
+    now = now || Date.now();
+    const act = DB.activity || {};
+    let n = 0, cur = now;
+    // allow today to be empty (streak still counts up to yesterday) — checked by starting today, then walking back
+    if (!act[dayKey(cur)]) cur -= 86400000;            // no activity yet today → count from yesterday
+    while (act[dayKey(cur)]) { n++; cur -= 86400000; }
+    return n;
+  }
+  function lastStudied() {
+    const keys = Object.keys(DB.activity || {});
+    return keys.length ? keys.sort().slice(-1)[0] : null;
+  }
+  function reviewsToday(now) { return (DB.activity || {})[dayKey(now || Date.now())] || 0; }
+
+  // ---- destructive / backup operations (used by the progress screen's reset) ----
+  function deleteWords(words) { for (const w of words) delete DB.cards[w]; save(); }
+  function clearAll() { DB.cards = {}; DB.activity = {}; save(); }
+  function exportJSON() { return JSON.stringify(DB); }
+  function importJSON(str) {
+    const r = JSON.parse(str);
+    if (r && r.cards) { DB = migrate(r); save(); return true; }
+    return false;
   }
   // words (with a memory record) that are due now, most-overdue first
   function dueWords(now) {
@@ -142,6 +180,7 @@
     getRetention: function () { return RETENTION; },
     GRADE: { AGAIN: 1, HARD: 2, GOOD: 3, EASY: 4 },
     MATURE_DAYS: MATURE_DAYS,
-    store: { load, save, get, grade, dueWords, stats, totals, all: () => DB.cards }
+    store: { load, save, get, grade, dueWords, stats, totals, all: () => DB.cards,
+      streak, lastStudied, reviewsToday, deleteWords, clearAll, exportJSON, importJSON }
   };
 })(window);

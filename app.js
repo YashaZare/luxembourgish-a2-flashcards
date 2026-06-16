@@ -191,7 +191,7 @@ function start(){
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
   state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
   syncPlayFab();
-  state.reviewMode=false;
+  state.reviewMode=false; state.returnTo=null;
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
@@ -338,6 +338,7 @@ function grade(verdict, srsGrade, flyDir){
   state.results[c.w]=verdict;
   const g = srsGrade || (verdict==='got' ? 3 : 1);   // default right=Good, left=Again
   if(global_SRS()) SRS.store.grade(c.w, g);
+  if(window.Progress) Progress.invalidate();
   showAnswerToast(c, verdict, g);
   state.animating=true;
   const sw=$('#swipe');
@@ -406,15 +407,17 @@ function done(){
   $('#reviewMissed').style.display = miss?'':'none';
   show('done');
 }
+// leave the study/done flow back to wherever we came from (monitor drill-down, else setup)
+function exitStudy(){ const to=state.returnTo||'setup'; state.returnTo=null; show(to); }
 
 // ---- nav wiring ----
 function wireStudy(){
   const flash=$('#flash'), sw=$('#swipe'), tint=$('#tint');
   $('#prevBtn').onclick = ()=>{ stopTutorial(); prev(); };
-  $('#backBtn').onclick = ()=>{ stopTutorial(); show('setup'); };
+  $('#backBtn').onclick = ()=>{ stopTutorial(); exitStudy(); };
   $('#reshuffleBtn').onclick = ()=>{ state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial(); };
   $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); playTutorial(); };
-  $('#newDeck').onclick = ()=>show('setup');
+  $('#newDeck').onclick = ()=>exitStudy();
   $('#reviewMissed').onclick = ()=>{
     const set=new Set(Object.keys(state.results).filter(w=>state.results[w]==='miss'));
     state.deck=state.deck.filter(c=>set.has(c.w)); state.idx=0; state.results={};
@@ -556,12 +559,14 @@ function wireStudy(){
 }
 
 // ---- helpers ----
+const SCREENS=['setup','study','done','monitor'];
 function show(id){
-  ['setup','study','done'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
+  SCREENS.forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
   window.scrollTo(0,0);
   const sec=$('#'+id); sec.setAttribute('tabindex','-1');
   try{ sec.focus({preventScroll:true}); }catch(e){ sec.focus(); }
   if(id==='setup') renderMemory();
+  if(id==='monitor') renderMonitor();
 }
 
 // ---- spaced repetition: memory summary + "review due" ----
@@ -569,17 +574,12 @@ function renderMemory(){
   const bar=$('#memBar'); if(!bar || !global_SRS()) return;
   const t=SRS.store.totals();
   const btn=$('#reviewDueBtn'), stats=$('#memStats');
-  if(t.seen===0){                       // brand-new user — keep the screen clean
-    bar.hidden=true; return;
-  }
-  bar.hidden=false;
-  if(stats) stats.innerHTML =
-    `🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
-    (t.due?` · <span class="due">🔁 ${t.due} due</span>`:` · all reviewed ✓`);
-  if(btn){
-    btn.hidden = !t.due;
-    $('#dueCount').textContent = t.due;
-  }
+  bar.hidden=false;                       // always visible now (carries the Progress entry point)
+  if(stats) stats.innerHTML = t.seen===0
+    ? `🧠 <span class="mem-empty">No words studied yet — tap Start to begin</span>`
+    : `🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
+      (t.due?` · <span class="due">🔁 ${t.due} due</span>`:` · all reviewed ✓`);
+  if(btn){ btn.hidden = !t.due; $('#dueCount').textContent = t.due; }
 }
 function startReviewDue(){
   if(!global_SRS()) return;
@@ -594,6 +594,194 @@ function startReviewDue(){
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
+// ============================ PROGRESS / HEATMAP SCREEN ============================
+const BUCKET_LABEL={unseen:'unseen',low:'too few',started:'started',learning:'learning',strong:'strong',mastered:'mastered'};
+function pct(x){ return Math.round((x||0)*100); }
+function ringSVG(score, size, stroke, bucket){
+  const r=(size-stroke)/2, c=2*Math.PI*r, off=c*(1-(score||0));
+  const col = (score==null) ? 'var(--hm-unseen)' : `var(--hm-${bucket||Progress.bucketOf({total:1,coverage:1,score:score,confident:true})})`;
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">`+
+    `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--hm-track)" stroke-width="${stroke}"/>`+
+    `<circle class="ring-p" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${stroke}" stroke-linecap="round"`+
+    ` stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>`;
+}
+function renderMonitor(){
+  if(!window.Progress || !global_SRS()) return;
+  if(!state.monView) state.monView='pages';
+  const P=Progress.get();
+  renderMonSummary(P);
+  $$('#monSeg button').forEach(b=>b.classList.toggle('on', b.dataset.view===state.monView));
+  renderMonLegend();
+  const body=$('#monBody');
+  if(state.monView==='pages') body.innerHTML=viewPages(P);
+  else if(state.monView==='lessons') body.innerHTML=viewLessons(P);
+  else body.innerHTML=viewTypes(P);
+}
+function renderMonSummary(P){
+  const b=P.book, streak=SRS.store.streak ? SRS.store.streak() : 0;
+  const bucket=Progress.bucketOf(b);
+  $('#monSummary').innerHTML =
+    `<div class="ms-ring">${ringSVG(b.score, 92, 9, bucket)}<div class="ms-pc"><b>${pct(b.score)}%</b><span>mastered</span></div></div>`+
+    `<div class="ms-grid">`+
+      `<div class="ms-stat"><b class="known">${b.known}</b><span>known</span></div>`+
+      `<div class="ms-stat"><b class="due">${b.due}</b><span>due</span></div>`+
+      `<div class="ms-stat"><b class="strug">${b.struggling}</b><span>struggling</span></div>`+
+      `<div class="ms-stat"><b class="streak">${streak}🔥</b><span>day streak</span></div>`+
+    `</div>`;
+}
+function renderMonLegend(){
+  $('#monLegend').innerHTML =
+    ['unseen','started','learning','strong','mastered'].map(k=>`<span class="lg"><i class="sw b-${k}"></i>${BUCKET_LABEL[k]}</span>`).join('')+
+    `<span class="lg"><i class="sw dot-strug"></i>struggling</span><span class="lg"><i class="sw bar-due"></i>due</span>`;
+}
+function cellFlags(b){
+  return (b.struggling>0?' has-strug':'')+(b.due>0?' has-due':'');
+}
+function viewPages(P){
+  if(P.book.seen===0) return emptyMonitor();
+  let html='';
+  P.lessons.forEach((L,li)=>{
+    const pgs=[]; for(let p=L.a;p<=L.b;p++) if(P.pages[p]) pgs.push(p);
+    if(!pgs.length) return;
+    const bucket=Progress.bucketOf(L);
+    html+=`<div class="kap"><button class="kap-head" data-lesson="${li}">`+
+      `${ringSVG(L.score,26,4,bucket)}`+
+      `<span class="kap-name">${esc(shortLesson(L.name))}</span>`+
+      `<span class="kap-meta">${L.seen}/${L.total} · ${pct(L.score)}%</span><span class="chev">›</span></button>`+
+      `<div class="hm-grid">`+
+      pgs.map(p=>{ const b=P.pages[p], bk=Progress.bucketOf(b);
+        return `<button class="hm-cell b-${bk}${cellFlags(b)}" data-page="${p}" aria-label="Page ${p}, ${pct(b.score)}% mastered"><span class="pn">${p}</span></button>`;
+      }).join('')+`</div></div>`;
+  });
+  return html;
+}
+function viewLessons(P){
+  if(P.book.seen===0) return emptyMonitor();
+  return `<div class="lz-grid">`+P.lessons.map((L,li)=>{
+    if(L.total===0) return '';
+    const bk=Progress.bucketOf(L);
+    return `<button class="lz-card b-${bk}${cellFlags(L)}" data-lesson="${li}">`+
+      `${ringSVG(L.score,40,5,bk)}`+
+      `<div class="lz-name">${esc(shortLesson(L.name))}</div>`+
+      `<div class="lz-meta">${pct(L.score)}% · ${L.seen}/${L.total}${L.due?` · ${L.due} due`:''}</div></button>`;
+  }).join('')+`</div>`;
+}
+function viewTypes(P){
+  if(P.book.seen===0) return emptyMonitor();
+  // aggregate raw types into the app's friendly groups, weakest first
+  const rows=TYPE_GROUPS.map(g=>{
+    const set=new Set(g.types);
+    const b=Progress.bucketFor(c=>c.ty && c.ty.some(t=>set.has(t)));
+    return {g, b};
+  }).filter(r=>r.b.total>0).sort((a,b)=>(a.b.score||0)-(b.b.score||0));
+  return rows.map(({g,b})=>{
+    const seg=(n,cls)=> n>0?`<span class="seg ${cls}" style="flex:${n}"></span>`:'';
+    return `<button class="ty-row" data-group="${g.key}">`+
+      `<div class="ty-top"><span class="ty-name">${esc(g.label)}</span><span class="ty-pc">${pct(b.score)}% · ${b.seen}/${b.total}</span></div>`+
+      `<div class="ty-bar">${seg(b.known,'k')}${seg(b.learning,'l')}${seg(b.new,'n')}</div></button>`;
+  }).join('');
+}
+function emptyMonitor(){
+  const L=state.data.lessons.length, pmin=state.data.pageMin, pmax=state.data.pageMax;
+  return `<div class="mon-empty"><div class="me-glyph">📖</div>`+
+    `<div class="me-t">Your book is waiting.</div>`+
+    `<div class="me-s">${pmax-pmin+1} pages · ${L} lessons · 0 studied</div>`+
+    `<button class="primary me-cta" id="monStartBtn">Start with page ${pmin} →</button></div>`;
+}
+function shortLesson(name){ return name.replace(/^Kapitel (\d+) — /,'K$1 · '); }
+
+// ---- drill-down ----
+function lessonWords(a,b){ return state.data.cards.filter(c=>c.pg.some(p=>p>=a&&p<=b)); }
+function openDrill(scope){
+  const now=Date.now();
+  let title, sub, cards, resetBtn='';
+  if(scope.kind==='page'){
+    cards=state.data.cards.filter(c=>c.pg.includes(scope.p));
+    const lp=lessonOfPage(scope.p);
+    title=`Page ${scope.p}`; sub=lp?esc(shortLesson(lp)):'';
+  } else { // lesson
+    const L=Progress.get().lessons[scope.li]; scope.a=L.a; scope.b=L.b;
+    cards=lessonWords(L.a,L.b);
+    title=esc(shortLesson(L.name)); sub=`pages ${L.a}–${L.b}`;
+    resetBtn=`<button class="drill-reset" id="drillReset">↺ reset this lesson</button>`;
+  }
+  const b=Progress.bucketFor(c=>cards.includes(c), now);
+  const due=cards.filter(c=>{const r=SRS.store.get(c.w); return r&&r.due<=now;}).length;
+  const strug=b.struggling;
+  const sheet=$('#drillSheet');
+  sheet.innerHTML=`<div class="sh-handle"></div>`+
+    `<div class="sh-title">${title}<span class="sh-sub">${sub}</span></div>`+
+    `<div class="sh-score b-${Progress.bucketOf(b)}">${pct(b.score)}% mastered</div>`+
+    `<div class="sh-counts">`+
+      `<span>✓ ${b.known} known</span><span>◐ ${b.learning} learning</span>`+
+      `<span>· ${b.new} new</span>${strug?`<span class="strug">✗ ${strug} struggling</span>`:''}</div>`+
+    `<div class="sh-btns">`+
+      `<button class="primary" id="drillStudy">Study ${b.total} word${b.total!==1?'s':''}</button>`+
+      (due?`<button class="ghost" id="drillDue">Review ${due} due</button>`:'')+
+    `</div>${resetBtn}`;
+  state.drillScope=scope; state.drillCards=cards;
+  openSheet('drillSheet','drillScrim');
+}
+function startScopedDeck(cards, mode, scope){
+  ensureCtx();
+  let deck=cards.slice();
+  if(mode==='due'){ const now=Date.now(); deck=deck.filter(c=>{const r=SRS.store.get(c.w); return r&&r.due<=now;}); }
+  if($('#shuffle') && $('#shuffle').checked) deck=shuffle(deck);
+  if(!deck.length) return;
+  closeSheets();
+  state.range = scope && scope.kind==='page' ? {a:scope.p,b:scope.p}
+              : scope && scope.kind==='lesson' ? {a:scope.a,b:scope.b} : null;
+  state.autoplay=!!($('#autoPlay')&&$('#autoPlay').checked); syncPlayFab();
+  state.reviewMode=(mode==='due'); state.returnTo='monitor';
+  state.deck=deck; state.idx=0; state.revealed=false; state.results={};
+  show('study'); render(); playTutorial();
+}
+
+// ---- sheets / menu ----
+function openSheet(id,scrim){ const s=$('#'+id), sc=$('#'+scrim); sc.hidden=false; s.hidden=false;
+  void s.offsetWidth;                       // commit the off-screen state, then transition in
+  sc.classList.add('show'); s.classList.add('show'); }
+function closeSheets(){ ['drillSheet','monMenu'].forEach(id=>{const s=$('#'+id); if(s){s.classList.remove('show'); s.hidden=true;}});
+  ['drillScrim','menuScrim'].forEach(id=>{const s=$('#'+id); if(s){s.classList.remove('show'); s.hidden=true;}}); }
+function openMenu(){
+  const t=SRS.store.totals();
+  $('#monMenu').innerHTML=`<div class="sh-handle"></div><div class="sh-title">Options</div>`+
+    `<button class="menu-item" id="menuExport">⬇︎ Export backup (.json)</button>`+
+    `<button class="menu-item" id="menuImport">⬆︎ Restore backup</button>`+
+    `<button class="menu-item danger" id="menuReset">⚠︎ Reset all progress…</button>`+
+    `<div class="menu-foot">${t.seen} words studied · stored only on this device</div>`;
+  openSheet('monMenu','menuScrim');
+}
+function exportBackup(){
+  const blob=new Blob([SRS.store.exportJSON()],{type:'application/json'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  const d=new Date(), ds=d.getFullYear()+''+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  a.href=url; a.download=`lux-progress-${ds}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importBackup(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const fr=new FileReader();
+    fr.onload=()=>{ try{ if(SRS.store.importJSON(fr.result)){ Progress.invalidate(); closeSheets(); renderMonitor(); } }catch(e){ alert('Could not read that backup.'); } };
+    fr.readAsText(f); };
+  inp.click();
+}
+function confirmResetAll(){
+  $('#monMenu').innerHTML=`<div class="sh-handle"></div><div class="sh-title danger-t">Reset everything?</div>`+
+    `<p class="sh-warn">This permanently erases your learning progress for every word. This cannot be undone.</p>`+
+    `<button class="menu-item" id="menuExport2">⬇︎ Download a backup first</button>`+
+    `<label class="reset-confirm">Type <b>RESET</b> to confirm<input id="resetField" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>`+
+    `<div class="sh-btns"><button class="ghost" id="resetCancel">Cancel</button><button class="danger-btn" id="resetGo" disabled>Reset all</button></div>`;
+  $('#menuExport2').onclick=exportBackup;
+  $('#resetField').oninput=e=>{ $('#resetGo').disabled = e.target.value.trim().toUpperCase()!=='RESET'; };
+  $('#resetCancel').onclick=closeSheets;
+  $('#resetGo').onclick=()=>{ SRS.store.clearAll(); Progress.invalidate(); closeSheets(); renderMonitor(); renderMemory(); };
+}
+function resetLesson(li){
+  const L=Progress.get().lessons[li]; const words=[...new Set(lessonWords(L.a,L.b).map(c=>c.w))];
+  if(!confirm(`Reset progress for “${shortLesson(L.name)}” (${words.length} words)?\nWords shared with other lessons are affected too.`)) return;
+  SRS.store.deleteWords(words); Progress.invalidate(); closeSheets(); renderMonitor(); renderMemory();
+}
+
 function lessonOfPage(p){
   const lr=state.data.lessonRanges||[];
   for(const [a,b,name] of lr) if(p>=a&&p<=b) return name;
@@ -718,5 +906,39 @@ function restoreSettings(){
   syncSlider(); paintSlider();
 }
 
+// ---- monitor screen wiring (elements exist at load) ----
+function wireMonitor(){
+  if($('#progressBtn')) $('#progressBtn').onclick = ()=>show('monitor');
+  if($('#monBack')) $('#monBack').onclick = ()=>show('setup');
+  if($('#monMenuBtn')) $('#monMenuBtn').onclick = openMenu;
+  $$('#monSeg button').forEach(btn=>btn.onclick=()=>{ state.monView=btn.dataset.view; renderMonitor(); });
+  // delegated taps inside the heatmap body
+  const body=$('#monBody');
+  if(body) body.addEventListener('click', e=>{
+    const cell=e.target.closest('.hm-cell'); if(cell){ openDrill({kind:'page', p:+cell.dataset.page}); return; }
+    const kap=e.target.closest('.kap-head'); if(kap){ openDrill({kind:'lesson', li:+kap.dataset.lesson}); return; }
+    const lz=e.target.closest('.lz-card'); if(lz){ openDrill({kind:'lesson', li:+lz.dataset.lesson}); return; }
+    const ty=e.target.closest('.ty-row'); if(ty){ const g=TYPE_GROUPS.find(x=>x.key===ty.dataset.group);
+      const set=new Set(g.types); startScopedDeck(state.data.cards.filter(c=>c.ty&&c.ty.some(t=>set.has(t))), null, null); return; }
+    const startB=e.target.closest('#monStartBtn'); if(startB){ show('setup'); }
+  });
+  // drill sheet actions (delegated — content is rebuilt each open)
+  const sheet=$('#drillSheet');
+  if(sheet) sheet.addEventListener('click', e=>{
+    if(e.target.closest('#drillStudy')) startScopedDeck(state.drillCards, null, state.drillScope);
+    else if(e.target.closest('#drillDue')) startScopedDeck(state.drillCards, 'due', state.drillScope);
+    else if(e.target.closest('#drillReset')) resetLesson(state.drillScope.li);
+  });
+  // options menu actions
+  const menu=$('#monMenu');
+  if(menu) menu.addEventListener('click', e=>{
+    if(e.target.closest('#menuExport')) exportBackup();
+    else if(e.target.closest('#menuImport')) importBackup();
+    else if(e.target.closest('#menuReset')) confirmResetAll();
+  });
+  ['drillScrim','menuScrim'].forEach(id=>{ const s=$('#'+id); if(s) s.onclick=closeSheets; });
+}
+
 wireStudy();
+wireMonitor();
 boot();
