@@ -185,17 +185,20 @@ function recount(){
 }
 
 // ---- study flow ----
+// "Start learning" now leads to a mode chooser (flashcards or match game)
 function start(){
   ensureCtx();   // unlock Web Audio within this tap so later autoplay/replay can sound
-  let deck=currentFilter();
+  const pool=currentFilter();
+  if(!pool.length) return;
+  state.gamePool=pool.slice();                       // for the match game
+  let deck=pool.slice();
   if($('#shuffle').checked) deck=shuffle(deck);
-  if(!deck.length) return;
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
-  syncPlayFab();
   state.reviewMode=false; state.returnTo=null;
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
-  show('study'); render(); playTutorial();
+  show('choose');
 }
+function startFlashcards(){ syncPlayFab(); show('study'); render(); playTutorial(); }
 // translation lines (DE/FR/EN…) for a card. `big` styles them larger (used as the
 // reverse-direction prompt on the front).
 function answerLinesHTML(c, langs, big){
@@ -625,14 +628,106 @@ function wireStudy(){
 }
 
 // ---- helpers ----
-const SCREENS=['setup','study','done','monitor'];
+const SCREENS=['setup','choose','game','study','done','monitor'];
 function show(id){
+  if(id!=='game') stopGame();          // leaving the game stops its timer
   SCREENS.forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
   window.scrollTo(0,0);
   const sec=$('#'+id); sec.setAttribute('tabindex','-1');
   try{ sec.focus({preventScroll:true}); }catch(e){ sec.focus(); }
   if(id==='setup') renderMemory();
   if(id==='monitor') renderMonitor();
+  if(id==='choose') updateGameBest();
+}
+
+// ============================ MATCH GAME ============================
+function gameCols(n){ return n<=10?2 : n<=20?3 : n<=30?4 : 5; }   // tiles → columns
+function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0]:t)||''; }
+function updateGameBest(){
+  const slider=$('#gameCount'); if(!slider) return;
+  const n=+slider.value; if($('#gameCountVal')) $('#gameCountVal').textContent=n;
+  const best=+localStorage.getItem('lb_match_best_'+n)||0;
+  if($('#gameBest')) $('#gameBest').textContent = best ? `Best: ${best.toFixed(1)}s` : 'No best time yet';
+}
+function startGame(){
+  ensureCtx();
+  const n = +(($('#gameCount')&&$('#gameCount').value)||20);
+  const pairs = Math.floor(n/2);
+  const lang = [...state.selLangs][0] || 'en';
+  let pool = (state.gamePool||[]).filter(c=> firstTr(c,lang));
+  pool = shuffle(pool).slice(0, Math.min(pairs, pool.length));
+  if(pool.length < 2){ return; }
+  const tiles=[];
+  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w}); tiles.push({id:i,kind:'t',text:firstTr(c,lang)}); });
+  show('game');                                  // stops any prior game timer
+  state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length,
+    budget:Math.max(20, pool.length*5), remaining:0, start:0, raf:null, count:n, done:false };
+  renderGameGrid(); startGameTimer();
+}
+function renderGameGrid(){
+  const g=state.game, grid=$('#gameGrid'); if(!grid) return;
+  const cols=gameCols(g.count), rows=Math.ceil(g.tiles.length/cols);
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  grid.style.gridTemplateRows=`repeat(${rows},1fr)`;
+  grid.dataset.cols=cols;
+  grid.innerHTML='';
+  g.tiles.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='game-tile '+(t.kind==='w'?'tw':'tt');
+    b.textContent=t.text; b.onclick=()=>onTileTap(t,b);
+    t.el=b; grid.appendChild(b);
+  });
+  if($('#gameResult')){ $('#gameResult').classList.remove('show'); $('#gameResult').hidden=true; }
+}
+function onTileTap(t,b){
+  const g=state.game; if(!g||g.done||t.matched) return;
+  if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); return; }
+  if(g.sel===t){ b.classList.remove('sel'); g.sel=null; g.selEl=null; return; }
+  if(g.sel.id===t.id && g.sel.kind!==t.kind){          // a correct pair
+    t.matched=true; g.sel.matched=true;
+    b.classList.add('matched'); g.selEl.classList.add('matched');
+    b.classList.remove('sel'); g.selEl.classList.remove('sel');
+    g.matched++; g.sel=null; g.selEl=null;
+    if(g.matched>=g.pairs) winGame();
+  } else {                                             // wrong → flash both, deselect
+    const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
+    g.sel=null; g.selEl=null;
+    setTimeout(()=>{ a.classList.remove('wrong'); bb.classList.remove('wrong'); }, 480);
+  }
+}
+function startGameTimer(){
+  const g=state.game; g.start=performance.now();
+  const tick=()=>{
+    if(state.game!==g || g.done) return;
+    g.remaining = g.budget - (performance.now()-g.start)/1000;
+    const pct = Math.max(0, g.remaining/g.budget)*100;
+    const bar=$('#gameBar'); if(bar){ bar.style.width=pct+'%'; bar.classList.toggle('low', pct<25); }
+    if(g.remaining<=0){ timeUp(); return; }
+    g.raf=requestAnimationFrame(tick);
+  };
+  g.raf=requestAnimationFrame(tick);
+}
+function stopGame(){ const g=state.game; if(g){ if(g.raf) cancelAnimationFrame(g.raf); g.raf=null; g.done=true; } }
+function winGame(){
+  const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
+  const elapsed = g.budget - g.remaining;
+  const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
+  const isBest = !prev || elapsed<prev;
+  if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
+  showGameResult(true, elapsed, isBest);
+}
+function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
+  const bar=$('#gameBar'); if(bar) bar.style.width='0%'; showGameResult(false, g.matched); }
+function showGameResult(won, val, isBest){
+  const el=$('#gameResult'); if(!el) return; const g=state.game;
+  el.innerHTML = `<div class="gr-card"><div class="gr-emoji">${won?'🎉':'⏱️'}</div>`+
+    `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
+    `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
+    `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
+    `<button class="ghost" id="gameQuit">Back</button></div></div>`;
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  $('#gameAgain').onclick=()=>{ el.classList.remove('show'); el.hidden=true; startGame(); };
+  $('#gameQuit').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('choose'); };
 }
 
 // ---- spaced repetition: memory summary + "review due" ----
@@ -1029,6 +1124,15 @@ function wireMonitor(){
   ['drillScrim','menuScrim'].forEach(id=>{ const s=$('#'+id); if(s) s.onclick=closeSheets; });
 }
 
+function wireGame(){
+  if($('#modeFlash')) $('#modeFlash').onclick = startFlashcards;
+  if($('#playGame')) $('#playGame').onclick = startGame;
+  if($('#gameCount')) $('#gameCount').oninput = updateGameBest;
+  if($('#chooseBack')) $('#chooseBack').onclick = ()=>show('setup');
+  if($('#gameBack')) $('#gameBack').onclick = ()=>show('choose');
+}
+
 wireStudy();
 wireMonitor();
+wireGame();
 boot();

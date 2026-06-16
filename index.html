@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=42">
+<link rel="stylesheet" href="styles.css?v=43">
 </head>
 <body>
 <div id="app">
@@ -195,6 +195,42 @@
     </div>
   </section>
 
+  <!-- MODE CHOOSER (after Start learning) -->
+  <section id="choose" class="screen hidden">
+    <header class="study-head">
+      <button class="icon-btn" id="chooseBack" aria-label="Back to setup">‹</button>
+      <h2 class="choose-h">How do you want to study?</h2>
+    </header>
+    <div class="choose-wrap">
+      <button class="mode-card" id="modeFlash" type="button">
+        <span class="mc-emoji">📇</span>
+        <span class="mc-title">Flashcards</span>
+        <span class="mc-sub">Swipe through the deck at your own pace</span>
+      </button>
+      <div class="mode-card game">
+        <span class="mc-emoji">🎮</span>
+        <span class="mc-title">Match game</span>
+        <span class="mc-sub">Pair words to meanings, against the clock</span>
+        <div class="game-count">
+          <div class="gc-row"><span>Tiles on screen</span><b id="gameCountVal">20</b></div>
+          <input type="range" id="gameCount" min="10" max="50" step="10" value="20" class="game-slider" aria-label="Number of tiles">
+          <div class="gc-best" id="gameBest"></div>
+        </div>
+        <button class="primary" id="playGame" type="button">Play →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATCH GAME -->
+  <section id="game" class="screen hidden">
+    <div class="game-top">
+      <button class="icon-btn" id="gameBack" aria-label="Quit game">‹</button>
+      <div class="progress game-bar-wrap"><div class="bar" id="gameBar"></div></div>
+    </div>
+    <div class="game-grid" id="gameGrid"></div>
+    <div class="game-result" id="gameResult" hidden></div>
+  </section>
+
   <!-- DONE SCREEN -->
   <section id="done" class="screen hidden">
     <div class="done-card">
@@ -236,8 +272,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=42"></script>
-<script src="progress.js?v=42"></script>
-<script src="app.js?v=42"></script>
+<script src="srs.js?v=43"></script>
+<script src="progress.js?v=43"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>
