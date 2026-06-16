@@ -394,3 +394,30 @@ input{font:inherit}
   -webkit-tap-highlight-color:transparent;transition:transform .1s, background .2s, color .2s}
 .top-box:active{transform:scale(.94)}
 .top-box.on{color:var(--on-mint);background:linear-gradient(180deg,#97ddbf,#72cca7);border-color:transparent;box-shadow:0 3px 10px rgba(99,184,148,.4)}
+
+/* ---- listening-first mode (audio mode 3) ---- */
+.top-box.on.listen{color:#fff;background:linear-gradient(180deg,#88b6ee,#6090d6);box-shadow:0 3px 10px rgba(96,144,214,.42)}
+/* the big audio cue that replaces the word on the front */
+.listen-cue{display:none;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  width:126px;height:126px;border-radius:50%;font-size:46px;line-height:1;cursor:pointer;
+  background:linear-gradient(180deg,#aee6d1,#7fcfae);color:var(--on-mint);border:none;
+  box-shadow:0 10px 26px rgba(99,184,148,.45), inset 0 2px 0 rgba(255,255,255,.55);
+  -webkit-tap-highlight-color:transparent;transition:transform .12s}
+.listen-cue:active{transform:scale(.95)}
+.listen-cue .lc-t{font-size:10px;font-weight:800;line-height:1.25;max-width:104px;opacity:.78;letter-spacing:.1px}
+.listen-cue.static{background:linear-gradient(180deg,#d2ece2,#bbe4d4);box-shadow:0 6px 16px rgba(99,184,148,.28)}
+/* spelling shown on the answer side (so reveal = spelling + meaning) */
+.bw{display:none;font-size:clamp(26px,7.5vw,40px);font-weight:800;color:var(--ink);letter-spacing:-.5px;line-height:1.1;margin-bottom:6px}
+.bw-ipa{display:block;font-size:16px;font-weight:600;color:var(--brand2);margin-top:3px}
+/* in listening mode: hide the spelling on the front, show the cue + the back spelling */
+#study.listen-mode .swipe .flash:not(.no-audio) .face.front .word,
+#study.listen-mode .swipe .flash:not(.no-audio) .face.front .ipa,
+#study.listen-mode .swipe .flash:not(.no-audio) .face.front .base-form,
+#study.listen-mode .swipe .flash:not(.no-audio) .face.front .say,
+#study.listen-mode .peek .face.front .word,
+#study.listen-mode .peek .face.front .ipa,
+#study.listen-mode .peek .face.front .base-form,
+#study.listen-mode .peek .face.front .say{display:none}
+#study.listen-mode .swipe .flash:not(.no-audio) .listen-cue:not([hidden]){display:inline-flex}
+#study.listen-mode .peek .listen-cue.static{display:inline-flex}
+#study.listen-mode .face.back .bw{display:block}

@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=36">
+<link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 <div id="app">
@@ -121,6 +121,7 @@
               <div class="ipa" id="peekIpa"></div>
               <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊</button>
               <div class="base-form" id="peekBase"></div>
+              <div class="listen-cue static" aria-hidden="true">🎧</div>
             </div>
             <div class="face-foot"><div class="tap-hint">tap here for context ▾</div></div>
           </div>
@@ -137,6 +138,8 @@
               <div class="ipa" id="frontIpa"></div>
               <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
               <div class="base-form" id="frontBase"></div>
+              <!-- listening-first: replaces the word; tap to (re)play, then tap the card to reveal -->
+              <button class="listen-cue" id="listenCue" type="button" aria-label="Play pronunciation">🎧<span class="lc-t">tap to hear · then tap card to reveal</span></button>
             </div>
             <div class="hints" id="frontHints"></div>
             <div class="face-foot">
@@ -146,6 +149,7 @@
           <div class="face back" aria-hidden="true">
             <div class="pos" id="backPos"></div>
             <div class="face-mid">
+              <div class="bw" id="backWord"></div>
               <div class="answer" id="backAnswer" aria-live="polite"></div>
               <div class="ex" id="backEx"></div>
               <div class="homo" id="backHomo"></div>
@@ -208,8 +212,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=36"></script>
-<script src="progress.js?v=36"></script>
-<script src="app.js?v=36"></script>
+<script src="srs.js?v=37"></script>
+<script src="progress.js?v=37"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

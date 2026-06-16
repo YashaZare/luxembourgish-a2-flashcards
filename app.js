@@ -22,7 +22,7 @@ const state = {
   deck: [], idx: 0, flipped: false,
   range: null, // {a,b} pages being studied
   results: {}, // word -> 'got' | 'miss'
-  autoplay: false, // auto-play pronunciation on each new card
+  audioMode: 1, // audio mode: 0 = silent (tap to play) · 1 = auto-play · 2 = listening-first
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -124,7 +124,8 @@ function buildSetup(){
     state.selTypes.clear(); syncIndividual(); recount(); persist(); };
   $('#onlyTranslated').onchange = ()=>{recount();persist();};
   $('#shuffle').onchange = persist;
-  if($('#autoPlay')) $('#autoPlay').onchange = ()=>{ state.autoplay=$('#autoPlay').checked; persist(); };
+  // setup toggle covers the common silent/auto choice; the top button adds listening-first
+  if($('#autoPlay')) $('#autoPlay').onchange = ()=>{ state.audioMode = $('#autoPlay').checked?1:0; persist(); syncPlayFab(); };
   $('#startBtn').onclick = start;
   if($('#reviewDueBtn')) $('#reviewDueBtn').onclick = startReviewDue;
   syncGroupChips();
@@ -189,7 +190,6 @@ function start(){
   if($('#shuffle').checked) deck=shuffle(deck);
   if(!deck.length) return;
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
-  state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
   syncPlayFab();
   state.reviewMode=false; state.returnTo=null;
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
@@ -208,9 +208,13 @@ function render(skipPeek){
   } else { $('#frontBase').innerHTML = ''; }
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
-  // auto-play the word's pronunciation when a new card appears (if the user enabled it).
+  $('#flash').classList.toggle('no-audio', !hasAudio);   // listening mode falls back to text
+  // listening-first: the spelling is revealed on the answer side, so show it there
+  if($('#backWord')) $('#backWord').innerHTML = esc(c.w) + (c.ip?` <span class="bw-ipa">/${esc(c.ip)}/</span>`:'');
+  if($('#listenCue')) $('#listenCue').hidden = !hasAudio;
+  // auto-play when a new card appears (auto-play or listening-first modes).
   // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
-  if(hasAudio && state.autoplay) playAudio(c);
+  if(hasAudio && state.audioMode>=1) playAudio(c);
 
   const r=state.range;
   // pages + types summary (hidden until the hint is opened)
@@ -455,12 +459,15 @@ function wireStudy(){
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
   $('#frontSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
-  // bottom button = auto-play on/off toggle only; it plays nothing on its own
+  // listening-first cue (big speaker on the audio-only front) → (re)play the word
+  if($('#listenCue')) $('#listenCue').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
+  // top button cycles the 3 audio modes: silent → auto-play → listening-first
   if($('#playFab')) $('#playFab').onclick = (e)=>{
     e.stopPropagation();
-    state.autoplay = !state.autoplay;
-    if($('#autoPlay')) $('#autoPlay').checked = state.autoplay;
+    state.audioMode = (state.audioMode + 1) % 3;
+    if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;
     persist(); syncPlayFab();
+    if(state.audioMode>=1) playAudio(state.deck[state.idx]);   // hear it right away on switch
   };
   // example-sentence speakers are rendered into card HTML each turn → delegate
   flash.addEventListener('click', (e)=>{
@@ -475,7 +482,7 @@ function wireStudy(){
     // Mark the gesture 'ignore' so neither a swipe NOR the tap-to-reveal/context logic fires —
     // their own click handlers do the work. The speaker's hit area is enlarged in CSS so a
     // near-miss still lands here and plays sound instead of opening the context drawer.
-    if(e.target.closest && (e.target.closest('a') || e.target.closest('.say') || e.target.closest('.exsay') || e.target.closest('#frontHintToggle'))){ axis='ignore'; return; }
+    if(e.target.closest && (e.target.closest('a') || e.target.closest('.say') || e.target.closest('.exsay') || e.target.closest('.listen-cue') || e.target.closest('#frontHintToggle'))){ axis='ignore'; return; }
     if(state.tutorial) stopTutorial();
     // note whether the gesture began on the tips, so a *tap* there won't collapse them
     startedInHints = !!(e.target.closest && e.target.closest('.hints'));
@@ -615,7 +622,6 @@ function startReviewDue(){
   const deck=due.map(w=>state.cardByWord[w]).filter(Boolean).slice(0,120);
   if(!deck.length) return;
   ensureCtx();
-  state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
   syncPlayFab();
   state.range=null;                                  // due review spans all pages
   state.reviewMode=true;
@@ -759,7 +765,7 @@ function startScopedDeck(cards, mode, scope){
   closeSheets();
   state.range = scope && scope.kind==='page' ? {a:scope.p,b:scope.p}
               : scope && scope.kind==='lesson' ? {a:scope.a,b:scope.b} : null;
-  state.autoplay=!!($('#autoPlay')&&$('#autoPlay').checked); syncPlayFab();
+  syncPlayFab();
   state.reviewMode=(mode==='due'); state.returnTo='monitor';
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
@@ -863,13 +869,20 @@ async function playUrls(urls, onStart, onEnd){
   onEnd&&onEnd(); return false;
 }
 function clearPlaying(){ $$('.say.playing,.exsay.playing').forEach(b=>b.classList.remove('playing')); }
-// the bottom button is purely an auto-play on/off toggle — it never plays audio itself
+// the top button cycles audio modes. It also flips the whole study screen into
+// "listening-first" (mode 2): the card front hides the spelling and shows a 🎧 cue.
+const AUDIO_MODES = [
+  { icon:'🔇', cls:'',          label:'Audio off — tap for auto-play' },
+  { icon:'🔊', cls:'on',        label:'Auto-play on — tap for listening-first' },
+  { icon:'🎧', cls:'on listen', label:'Listening-first — tap for audio off' }
+];
 function syncPlayFab(){
+  const m = state.audioMode||0, a = AUDIO_MODES[m];
+  const study=$('#study'); if(study) study.classList.toggle('listen-mode', m===2);
   const fab=$('#playFab'); if(!fab) return;
-  fab.classList.toggle('on', !!state.autoplay);
-  fab.textContent = state.autoplay ? '🔊' : '🔇';
-  fab.setAttribute('aria-pressed', state.autoplay?'true':'false');
-  fab.setAttribute('aria-label', state.autoplay?'Auto-play on — tap to turn off':'Auto-play off — tap to turn on');
+  fab.className = 'top-box ' + a.cls;
+  fab.textContent = a.icon;
+  fab.setAttribute('aria-label', a.label);
 }
 function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
 function playAudio(card){
@@ -908,7 +921,7 @@ function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
     onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
-    autoplay:!!($('#autoPlay')&&$('#autoPlay').checked) };
+    audioMode:state.audioMode };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
@@ -930,7 +943,10 @@ function restoreSettings(){
   }
   if(typeof s.onlyTr==='boolean') $('#onlyTranslated').checked=s.onlyTr;
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
-  if(typeof s.autoplay==='boolean' && $('#autoPlay')) $('#autoPlay').checked=s.autoplay;
+  if(typeof s.audioMode==='number') state.audioMode = s.audioMode;
+  else if(typeof s.autoplay==='boolean') state.audioMode = s.autoplay?1:0;   // migrate old setting
+  if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;
+  syncPlayFab();
   syncSlider(); paintSlider();
 }
 
