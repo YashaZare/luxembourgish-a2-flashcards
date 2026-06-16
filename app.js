@@ -275,6 +275,7 @@ function render(skipPeek){
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
+  renderLastWord();
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
   // pre-render the NEXT card behind, so swiping reveals it instantly (no gap)
@@ -320,31 +321,35 @@ function flyMsg(text, kind){
   el.textContent=text; el.className='fly-msg '+(kind||'')+' show';
   clearTimeout(state.flyT); state.flyT=setTimeout(()=>el.classList.remove('show'), 1000);
 }
-function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
+// when context opens, collapse the top row so the card grows up into its space (same timing)
+function setContextOpen(open){ $('#study').classList.toggle('context-open', open); }
+function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open'); setContextOpen(false);
   const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
-function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open');
+function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open'); setContextOpen(open);
   const t=$('#frontHintToggle'); if(t) t.textContent= open?'tap to hide ▴':'tap here for context ▾'; }
 function resetSwipe(){
   const sw=$('#swipe'); if(!sw) return;
   sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='';
   $('#tint').style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
 }
-// FSRS grade → short label shown on the stamp/toast
-const GRADE_LABEL = {1:'AGAIN', 2:'HARD', 3:'GOOD', 4:'EASY'};
-function showAnswerToast(c, verdict, g){
+// the persistent top "last word" box shows the PREVIOUS card (the one you just graded):
+// its word + your verdict + translation. Tapping it goes back to that card.
+function renderLastWord(){
+  const el=$('#lastWord'); if(!el) return;
+  const prev=state.deck[state.idx-1];
+  if(!prev){ el.className='last-word empty'; el.disabled=true; el.innerHTML='<span class="lw-empty">start of deck</span>'; return; }
+  el.disabled=false;
+  const verdict=state.results[prev.w];
   const langs=[...state.selLangs].filter(l=>state.data.langs.includes(l));
-  const trs=langs.map(l=>{ const t=c.tr&&c.tr[l]; if(!t) return null;
-    const arr=Array.isArray(t)?t:[t]; return `${l.toUpperCase()} ${arr.slice(0,3).join(', ')}${arr.length>3?'…':''}`; }).filter(Boolean);
-  const el=$('#ansToast');
-  el.className='ans-toast '+verdict;
-  const tag = verdict==='got' ? `✓ ${(GRADE_LABEL[g]||'GOOD').toLowerCase()}` : '↻ review';
-  el.innerHTML=`<div class="aw">${esc(c.w)}<span class="verdict">${tag}</span></div>`+
-    (trs.length?`<div class="at">${esc(trs.join('  ·  '))}</div>`:`<div class="at">— no translation —</div>`);
-  void el.offsetWidth; el.classList.add('show');
-  clearTimeout(state.toastT); state.toastT=setTimeout(()=>el.classList.remove('show'), 8100);
+  const trs=langs.map(l=>{ const t=prev.tr&&prev.tr[l]; if(!t) return null;
+    const arr=Array.isArray(t)?t:[t]; return arr.slice(0,2).join(', '); }).filter(Boolean);
+  const tag = verdict==='got' ? '✓' : verdict==='miss' ? '↻' : '↩';
+  el.className='last-word'+(verdict?' '+verdict:'');
+  el.innerHTML=`<div class="lw-top"><span class="lw-w">${esc(prev.w)}</span><span class="lw-tag">${tag}</span></div>`+
+    `<div class="lw-tr">${trs.length?esc(trs.join(' · ')):'—'}</div>`;
 }
 // verdict 'got'|'miss' drives the visual; srsGrade (1–4) feeds the scheduler;
-// flyDir 'left'|'right'|'up' is the exit animation.
+// flyDir 'left'|'right'|'up'|'down' is the exit animation.
 function grade(verdict, srsGrade, flyDir){
   if(state.animating) return;
   const c=state.deck[state.idx]; if(!c) return;
@@ -352,7 +357,6 @@ function grade(verdict, srsGrade, flyDir){
   const g = srsGrade || (verdict==='got' ? 3 : 1);   // default right=Good, left=Again
   if(global_SRS()) SRS.store.grade(c.w, g);
   if(window.Progress) Progress.invalidate();
-  showAnswerToast(c, verdict, g);
   state.animating=true;
   const sw=$('#swipe');
   $('#peek').classList.add('rise');     // the next card (already behind) rises to the front
@@ -427,7 +431,8 @@ function exitStudy(){ const to=state.returnTo||'setup'; state.returnTo=null; sho
 // ---- nav wiring ----
 function wireStudy(){
   const flash=$('#flash'), sw=$('#swipe'), tint=$('#tint');
-  $('#prevBtn').onclick = ()=>{ stopTutorial(); prev(); };
+  // tapping the previous-word box goes back a card
+  if($('#lastWord')) $('#lastWord').onclick = ()=>{ stopTutorial(); prev(); };
   $('#backBtn').onclick = ()=>{ stopTutorial(); exitStudy(); };
   $('#reshuffleBtn').onclick = ()=>{ state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial(); };
   $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); playTutorial(); };

@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=32">
+<link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body>
 <div id="app">
@@ -91,11 +91,17 @@
       <div class="counter" id="counter" aria-live="polite">0/0</div>
     </header>
 
+    <!-- top row: the previous word (tap = go back) + audio toggle + reshuffle, as boxes.
+         Collapses when the context drawer opens so the card can grow up into its space. -->
+    <div class="top-row" id="topRow">
+      <button class="last-word" id="lastWord" type="button" aria-label="Go to previous word"></button>
+      <button class="top-box" id="playFab" type="button" aria-label="Auto-play pronunciation">🔊</button>
+      <button class="top-box" id="reshuffleBtn" type="button" aria-label="Reshuffle deck">⟳</button>
+    </div>
+
     <div class="flash-wrap" id="flashWrap">
       <div class="edge-hint left" id="hintLeft">✗ don't know</div>
       <div class="edge-hint right" id="hintRight">know it ✓</div>
-      <div class="edge-hint top" id="hintTop">↑ perfect</div>
-      <div class="edge-hint bottom" id="hintBottom">↓ no idea</div>
       <!-- confidence gauge: appears only while swiping right; drop higher = easier -->
       <div class="conf-line" id="confLine" aria-hidden="true">
         <span class="conf-cap easy">EASY</span>
@@ -156,17 +162,6 @@
         <div class="tut-text">Swipe <b class="g">right if you know it</b> · <b class="r">left if you don't</b><br><span class="tut-sub">drop higher = easier · swipe ↑ for perfect</span></div>
       </div>
     </div>
-
-    <!-- answer reveal after a swipe -->
-    <div class="ans-toast" id="ansToast" aria-live="polite"></div>
-
-    <div class="study-sub">
-      <button class="link-btn" id="prevBtn">‹ prev</button>
-      <!-- always-present audio control; auto-plays each new card, tap to replay. Lives in
-           the bottom bar so it adds no height of its own and never pushes the card up. -->
-      <button class="play-fab" id="playFab" type="button" aria-label="Play pronunciation">🔊</button>
-      <button class="link-btn" id="reshuffleBtn">reshuffle</button>
-    </div>
   </section>
 
   <!-- DONE SCREEN -->
@@ -210,8 +205,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=32"></script>
-<script src="progress.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="srs.js?v=33"></script>
+<script src="progress.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>
