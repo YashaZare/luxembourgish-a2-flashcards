@@ -179,4 +179,9 @@ input{font:inherit}
   .answer .tr{color:#0f2c22}
   .word{color:#13203a}
   .tap-hint{color:#13203a66}
+  .homo{background:#00000010;border-color:#0000001f}
+  .homo .hwarn{color:#b45309}
+  .homo .hg{color:#2f54b0}
+  .meta.footnote span{color:#13203a66}
+  .meta.footnote .m-types{color:#3f63c0;opacity:.85}
 }

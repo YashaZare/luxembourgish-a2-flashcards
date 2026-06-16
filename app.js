@@ -40,7 +40,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '4';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '5';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
