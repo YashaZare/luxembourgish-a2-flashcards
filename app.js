@@ -182,7 +182,7 @@ function start(){
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
-function render(){
+function render(skipPeek){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
   setReveal(false); resetSwipe();
@@ -262,7 +262,7 @@ function render(){
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
   // pre-render the NEXT card behind, so swiping reveals it instantly (no gap)
-  updatePeek(state.deck[state.idx+1]);
+  if(!skipPeek) updatePeek(state.deck[state.idx+1]);
 }
 function setReveal(v){
   state.revealed=v;
@@ -305,9 +305,15 @@ function grade(verdict){               // 'got' | 'miss'
   sw.style.opacity='0';
   setTimeout(()=>{
     state.animating=false;
-    $('#peek').classList.remove('rise');
-    if(state.idx<state.deck.length-1){ state.idx++; render(); }   // render() resets #swipe over the now-shown peek
-    else done();
+    if(state.idx>=state.deck.length-1){ $('#peek').classList.remove('rise'); done(); return; }
+    state.idx++;
+    render(true);                                  // render the now-current card into #swipe; keep peek for now
+    // gently cross-fade the top card in over the (identical) risen peek — no instant brightness pop
+    sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='0';
+    void sw.offsetWidth;
+    sw.style.transition='opacity .26s ease';
+    sw.style.opacity='1';
+    setTimeout(()=>{ $('#peek').classList.remove('rise'); updatePeek(state.deck[state.idx+1]); }, 280);
   }, 340);
 }
 function updatePeek(card){

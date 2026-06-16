@@ -99,7 +99,7 @@ input{font:inherit}
 .peek{position:absolute;inset:0;z-index:0;pointer-events:none;transform:scale(.955) translateY(10px);
   transition:transform .34s cubic-bezier(.2,.8,.2,1)}
 .peek.rise{transform:scale(1) translateY(0)}
-.peek .flash{box-shadow:0 14px 40px #0005}
+.peek .flash{box-shadow:0 20px 50px #0006}   /* match the top card exactly so the swap is seamless */
 .peek .face.front{opacity:1}
 .flash{position:absolute;inset:0;border-radius:26px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 50px #0006}
 .face{position:absolute;inset:0;padding:14px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:opacity .26s}
