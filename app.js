@@ -222,8 +222,14 @@ function render(skipPeek){
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
   $('#flash').classList.toggle('no-audio', !hasAudio);   // listening mode falls back to text
-  // listening-first: the spelling is revealed on the answer side, so show it there
-  if($('#backWord')) $('#backWord').innerHTML = esc(c.w) + (c.ip?` <span class="bw-ipa">/${esc(c.ip)}/</span>`:'');
+  // listening-first / reverse: the spelling is revealed on the answer side. Include the
+  // base/dictionary form too (the IPA is the lemma's), e.g. "infinitive: aneren".
+  if($('#backWord')){
+    let bwHTML = esc(c.w) + (c.ip?` <span class="bw-ipa">/${esc(c.ip)}/</span>`:'');
+    if(c.lemma){ const lbl = c.pos==='VRB' ? 'infinitive' : 'base form';
+      bwHTML += `<span class="bw-base"><span class="bf-label">${lbl}:</span> ${esc(c.lemma)}</span>`; }
+    $('#backWord').innerHTML = bwHTML;
+  }
   if($('#listenCue')) $('#listenCue').hidden = !hasAudio;
   // auto-play when a new card appears (auto-play or listening-first modes).
   // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
