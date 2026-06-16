@@ -384,7 +384,7 @@ function wireStudy(){
   flash.onkeydown = e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); stopTutorial(); reveal(); } };
 
   // ---- swipe (pointer = touch + mouse) ----
-  let dragging=false, x0=0, y0=0, dx=0, moved=false;
+  let dragging=false, deciding=false, axis=null, x0=0, y0=0, dx=0, startedInHints=false;
   const THRESH=88;
   // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
   // hints body must NOT collapse it
@@ -406,29 +406,42 @@ function wireStudy(){
 
   function down(e){
     if(state.animating) return;
-    if(e.target.closest && e.target.closest('a')) return;  // let links (e.g. LOD) work natively
-    // let the open hints scroll/tap freely, and let the toggle handle itself
-    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle') || e.target.closest('.say') || e.target.closest('.exsay'))) return;
+    // interactive bits handle themselves — never start a swipe on them
+    if(e.target.closest && (e.target.closest('a') || e.target.closest('.say') || e.target.closest('.exsay') || e.target.closest('#frontHintToggle'))) return;
     if(state.tutorial) stopTutorial();
-    dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
+    // note whether the gesture began on the tips, so a *tap* there won't collapse them
+    startedInHints = !!(e.target.closest && e.target.closest('.hints'));
+    // start "deciding": don't claim the gesture or capture the pointer until we know it's a
+    // horizontal swipe — that lets a vertical drag on the tips scroll the drawer natively
+    deciding=true; dragging=false; axis=null; x0=e.clientX; y0=e.clientY; dx=0;
+  }
+  function engage(e){
+    dragging=true; deciding=false;
     sw.style.transition='none'; sw.classList.add('dragging');
     try{ sw.setPointerCapture(e.pointerId); }catch(_){}
   }
   function move(e){
+    if(!deciding && !dragging) return;
+    const ddx=e.clientX-x0, ddy=e.clientY-y0;
+    if(deciding){
+      if(Math.abs(ddx)<8 && Math.abs(ddy)<8) return;       // not enough movement to decide
+      if(Math.abs(ddx) >= Math.abs(ddy)){ axis='x'; engage(e); }   // horizontal → swipe
+      else { axis='y'; deciding=false; return; }           // vertical → let it scroll natively
+    }
     if(!dragging) return;
-    dx=e.clientX-x0;
-    if(Math.abs(dx)>6) moved=true;
+    dx=ddx;
     sw.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`;
     const t=Math.min(Math.abs(dx)/THRESH,1);
     tint.style.background = dx>=0?'var(--accent)':'var(--warn)';
-    tint.style.opacity = (moved? t*0.32 : 0);
+    tint.style.opacity = t*0.32;
     $('#stampGot').style.opacity = dx>0? t : 0;
     $('#stampMiss').style.opacity = dx<0? t : 0;
   }
   function up(){
-    if(!dragging) return; dragging=false; sw.classList.remove('dragging');
-    if(Math.abs(dx)>=THRESH){ grade(dx>0?'got':'miss'); return; }
-    if(!moved){                                   // a tap (no drag)
+    const wasDragging=dragging;
+    deciding=false; dragging=false; sw.classList.remove('dragging');
+    if(wasDragging && Math.abs(dx)>=THRESH){ grade(dx>0?'got':'miss'); return; }
+    if(!wasDragging && axis===null && !startedInHints){    // a genuine tap, not on the tips
       if(state.revealed){ reveal(); }             // on the answer side: tap flips back
       else {
         const f=frontFace(), open=f&&f.classList.contains('hints-open');
