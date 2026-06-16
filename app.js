@@ -40,7 +40,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '3';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '4';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
@@ -216,6 +216,15 @@ function render(){
   });
   const exBack = (c.ex && c.ex.length>1) ? c.ex[1] : (c.ex && c.ex[0]);
   $('#backEx').innerHTML = exBack ? `<span class="exl">e.g.</span> ${esc(exBack)}` : '';
+  // homonym reminder: this word also exists with a different capitalisation + meaning
+  if(c.homo && c.homo.length>1){
+    const parts = c.homo.map(h=>{
+      const f = h.form===c.w ? `<b>${esc(h.form)}</b>` : esc(h.form);
+      return `${f} <span class="hg">(${esc(h.gloss)})</span>`;
+    });
+    $('#backHomo').innerHTML = `<span class="hwarn">⚠ same spelling, different word:</span> ${parts.join(' <span class="hne">≠</span> ')}`;
+    $('#backHomo').style.display='';
+  } else { $('#backHomo').innerHTML=''; $('#backHomo').style.display='none'; }
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
