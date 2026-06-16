@@ -516,3 +516,106 @@ input{font:inherit}
 .gr-time{font-size:17px;color:var(--brand2);font-weight:700;margin-bottom:18px}
 .gr-best{color:#d6ab48;font-weight:800;font-size:14px}
 .gr-btns{display:flex;flex-direction:column;gap:10px}
+
+/* ---- theme picker (setup) ---- */
+.theme-opts{display:flex;gap:10px}
+.theme-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border-radius:14px;
+  background:var(--panel2);border:2px solid var(--line);font-size:13px;font-weight:800;color:var(--muted);transition:.12s}
+.theme-opt:active{transform:scale(.97)}
+.theme-opt.on{border-color:var(--brand);color:var(--ink)}
+.tp-swatch{width:100%;height:42px;border-radius:11px;border:1px solid var(--line)}
+.tp-swatch.clay{background:linear-gradient(135deg,#fcfbf7 0 50%,#83d3b1 50% 100%)}
+.tp-swatch.tactile{background:linear-gradient(135deg,#2a2a2e 0 50%,#e27f37 50% 100%)}
+
+/* ============================================================================
+   THEME: Tactile Dark — neo-skeuomorphic. Dark surfaces, dual neumorphic
+   shadows (light top-left / dark bottom-right), glossy raised orange accent,
+   inset wells for fields/tracks. Toggled by <html data-theme="tactile">.
+   ============================================================================ */
+:root[data-theme="tactile"]{
+  --bg:#252528; --bg2:#1e1e21; --panel:#2b2b2f; --panel2:#232327;
+  --ink:#ece9e3; --muted:#9c978d; --line:#3a3a40;
+  --brand:#e27f37; --brand2:#ef9658; --accent:#e27f37; --accent-deep:#d56a22;
+  --warn:#e0705e; --warn-deep:#cf5a48; --gold:#e0b24a; --on-mint:#fff8f2;
+  --tap:#ffffff14;
+  --sh-sm:3px 3px 7px #17171b, -3px -3px 6px #343440;
+  --sh:5px 5px 13px #141418, -4px -4px 11px #343440;
+  --sh-lg:9px 9px 24px #0f0f13, -7px -7px 18px #343440;
+  --sh-clay:0 5px 13px #00000099, inset 0 1px 0 #ffb37a, inset 0 -3px 8px #0000004d;
+  --hm-track:#ffffff10; --hm-unseen:#2d2d33; --hm-low:#36363d;
+  --hm-started:#b66a3a; --hm-learning:#c79a3c; --hm-strong:#4f8e6f; --hm-mastered:#3aa873;
+  --hm-due:#5b8cc0; --hm-strug:#cf5a48;
+}
+[data-theme="tactile"] body{background:radial-gradient(1200px 720px at 50% -12%,#313137 0%,transparent 60%),var(--bg)}
+[data-theme="tactile"] .tp-swatch.tactile{border-color:#000}
+
+/* glossy raised orange buttons */
+[data-theme="tactile"] .primary,[data-theme="tactile"] .sh-btns .primary{
+  background:linear-gradient(180deg,#ef9048 0%,#e07d32 48%,#cf6a20 100%);color:#fff;text-shadow:0 1px 1px #0006;
+  box-shadow:var(--sh-clay),0 6px 14px #0007;border:1px solid #00000040}
+[data-theme="tactile"] .primary:active{box-shadow:inset 0 3px 9px #0009, inset 0 -1px 0 #ffb37a55;transform:translateY(1px)}
+[data-theme="tactile"] .ghost{background:var(--panel);box-shadow:var(--sh-sm);border:1px solid #00000040}
+[data-theme="tactile"] .ghost:active{box-shadow:inset 3px 3px 7px #141418, inset -3px -3px 6px #343440}
+[data-theme="tactile"] .mem-review,[data-theme="tactile"] .danger-btn{
+  background:linear-gradient(180deg,#ef9048,#cf6a20);color:#fff;text-shadow:0 1px 1px #0006;box-shadow:var(--sh-clay),0 4px 10px #0007}
+[data-theme="tactile"] .danger-btn{background:linear-gradient(180deg,#e07e6e,#cf5848)}
+
+/* cards get a hairline edge over the neumorphic shadow */
+[data-theme="tactile"] .field,[data-theme="tactile"] .mem-bar,[data-theme="tactile"] .mode-card,
+[data-theme="tactile"] .mon-summary,[data-theme="tactile"] .lz-card,[data-theme="tactile"] .done-card,
+[data-theme="tactile"] .gr-card,[data-theme="tactile"] .icon-btn,[data-theme="tactile"] .top-box,
+[data-theme="tactile"] .mem-progress,[data-theme="tactile"] .last-word,[data-theme="tactile"] .sheet{border:1px solid #00000038}
+
+/* swipe card faces (dark) */
+[data-theme="tactile"] .flash,[data-theme="tactile"] .peek .flash{box-shadow:var(--sh-lg);border:1px solid #00000045}
+[data-theme="tactile"] .face.front{background:linear-gradient(165deg,#34343b,#27272c)}
+[data-theme="tactile"] .face.back{background:linear-gradient(165deg,#2f3631,#27272c)}
+
+/* chips — slightly inset off, glossy orange on */
+[data-theme="tactile"] .chip{background:var(--panel2);box-shadow:inset 1px 1px 3px #141418, inset -1px -1px 3px #343440;border:1px solid #00000022}
+[data-theme="tactile"] .chip.on,[data-theme="tactile"] .chip.lang.on{
+  background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;text-shadow:0 1px 1px #0006;
+  box-shadow:0 3px 8px #0007, inset 0 1px 0 #ffb37a;border:1px solid #00000038}
+
+/* toggles — inset track, raised knob, glossy orange when on */
+[data-theme="tactile"] .switch span:last-of-type{background:var(--panel2);box-shadow:inset 2px 2px 5px #141418, inset -2px -2px 5px #343440;border:1px solid #00000022}
+[data-theme="tactile"] .switch span:last-of-type::after{background:linear-gradient(180deg,#4c4c54,#33333a);box-shadow:1px 1px 3px #0008, inset 0 1px 0 #5c5c66}
+[data-theme="tactile"] .switch input:checked ~ span:last-of-type{background:linear-gradient(180deg,#d56a22,#b85718);box-shadow:inset 0 1px 3px #0008}
+[data-theme="tactile"] .switch input:checked ~ span:last-of-type::after{background:linear-gradient(180deg,#ffc28a,#ef9048);box-shadow:1px 1px 3px #0008, inset 0 1px 0 #ffd9b3}
+
+/* fields / inputs — inset wells */
+[data-theme="tactile"] .range-row label,[data-theme="tactile"] .reset-confirm input{
+  background:var(--panel2);box-shadow:inset 2px 2px 5px #141418, inset -2px -2px 5px #343440;border:1px solid #00000022}
+
+/* sliders — inset track, raised orange-ringed knob */
+[data-theme="tactile"] .dual-slider .track,[data-theme="tactile"] .game-slider,
+[data-theme="tactile"] .progress,[data-theme="tactile"] .seg3,[data-theme="tactile"] .mon-seg{
+  background:var(--panel2);box-shadow:inset 2px 2px 5px #141418, inset -1px -1px 3px #343440}
+[data-theme="tactile"] .dual-slider .track-fill,[data-theme="tactile"] .progress .bar{background:linear-gradient(90deg,#d56a22,#ef9048)}
+[data-theme="tactile"] #gameBar.low{background:linear-gradient(90deg,#cf5a48,#e0705e)}
+[data-theme="tactile"] .dual-slider input[type=range]::-webkit-slider-thumb,
+[data-theme="tactile"] .game-slider::-webkit-slider-thumb{background:linear-gradient(180deg,#4c4c54,#2e2e34);border:3px solid #d56a22;box-shadow:2px 2px 6px #0009, inset 0 1px 0 #5c5c66}
+[data-theme="tactile"] .dual-slider input[type=range]::-moz-range-thumb,
+[data-theme="tactile"] .game-slider::-moz-range-thumb{background:#3a3a40;border:3px solid #d56a22}
+
+/* segmented "on" + top box "on" */
+[data-theme="tactile"] .seg3 button.on,[data-theme="tactile"] .mon-seg button.on,[data-theme="tactile"] .top-box.on{
+  background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:0 3px 8px #0007, inset 0 1px 0 #ffb37a}
+[data-theme="tactile"] .top-box.on.listen{background:linear-gradient(180deg,#6fa8e0,#4f86c8)}
+
+/* game tiles */
+[data-theme="tactile"] .game-tile{background:var(--panel);box-shadow:var(--sh-sm);border:1px solid #00000038}
+[data-theme="tactile"] .game-tile.tt{color:var(--brand2)}
+[data-theme="tactile"] .game-tile.sel{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:0 4px 12px #0008, inset 0 1px 0 #ffb37a}
+[data-theme="tactile"] .game-tile.wrong{background:#4a2622;border-color:var(--warn);color:#f0b0a6}
+
+/* misc dark variants */
+[data-theme="tactile"] .listen-cue{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:var(--sh-clay),0 8px 20px #0008}
+[data-theme="tactile"] .listen-cue.static{background:linear-gradient(180deg,#5a4636,#463528)}
+[data-theme="tactile"] .conf-label{background:#1a1a1ee6;color:var(--ink)}
+[data-theme="tactile"] .stamp{background:#1a1a1ecc}
+[data-theme="tactile"] .fly-msg{background:#202024;color:var(--ink)}
+[data-theme="tactile"] .tut{background:rgba(24,24,28,.9)}
+[data-theme="tactile"] .sheet-scrim,[data-theme="tactile"] .game-result{background:rgba(0,0,0,.55)}
+[data-theme="tactile"] .menu-item{background:var(--panel2);box-shadow:inset 1px 1px 3px #141418}
+[data-theme="tactile"] .homo{background:#00000033}

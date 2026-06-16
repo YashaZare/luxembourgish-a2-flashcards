@@ -24,6 +24,7 @@ const state = {
   results: {}, // word -> 'got' | 'miss'
   audioMode: 1, // audio mode: 0 = silent (tap to play) · 1 = auto-play · 2 = listening-first
   reverse: false, // reverse direction: meaning → Lëtzebuergesch
+  theme: 'clay', // visual theme: 'clay' | 'tactile'
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -129,11 +130,22 @@ function buildSetup(){
   if($('#autoPlay')) $('#autoPlay').onchange = ()=>{ state.audioMode = $('#autoPlay').checked?1:0; persist(); syncPlayFab(); };
   $('#startBtn').onclick = start;
   if($('#reviewDueBtn')) $('#reviewDueBtn').onclick = startReviewDue;
+  $$('.theme-opt').forEach(b=> b.onclick = ()=>{ applyTheme(b.dataset.theme); persist(); });
+  applyTheme(state.theme);   // sync the picker highlight (data-theme already set in <head>)
   syncGroupChips();
 }
 
 function chip(label, on){ const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':'');
   b.textContent=label; b.setAttribute('aria-pressed', !!on); return b; }
+
+// ---- theme ----
+function applyTheme(t){
+  state.theme = t==='tactile' ? 'tactile' : 'clay';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  const m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', state.theme==='tactile' ? '#252528' : '#efece4');
+  $$('.theme-opt').forEach(b=>b.classList.toggle('on', b.dataset.theme===state.theme));
+}
 
 // ---- type group <-> individual sync ----
 function syncIndividual(){ $$('#typeIndividual .chip').forEach(c=>{
@@ -1086,7 +1098,7 @@ function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
     onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
-    audioMode:state.audioMode, reverse:state.reverse };
+    audioMode:state.audioMode, reverse:state.reverse, theme:state.theme };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
@@ -1108,6 +1120,7 @@ function restoreSettings(){
   }
   if(typeof s.onlyTr==='boolean') $('#onlyTranslated').checked=s.onlyTr;
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
+  if(typeof s.theme==='string') applyTheme(s.theme);
   if(typeof s.reverse==='boolean') state.reverse = s.reverse;
   if(typeof s.audioMode==='number') state.audioMode = s.audioMode;
   else if(typeof s.autoplay==='boolean') state.audioMode = s.autoplay?1:0;   // migrate old setting

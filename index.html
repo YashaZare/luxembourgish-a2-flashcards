@@ -11,7 +11,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=44">
+<script>try{var _s=JSON.parse(localStorage.getItem('lux-fc-settings')||'{}');document.documentElement.setAttribute('data-theme',_s.theme||'clay');}catch(e){document.documentElement.setAttribute('data-theme','clay');}</script>
+<link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body>
 <div id="app">
@@ -32,6 +33,13 @@
     </div>
 
     <div class="card-panel">
+      <div class="field">
+        <div class="field-label"><span>🎨 Theme</span></div>
+        <div class="theme-opts">
+          <button class="theme-opt" data-theme="clay" type="button"><span class="tp-swatch clay"></span>Soft Clay</button>
+          <button class="theme-opt" data-theme="tactile" type="button"><span class="tp-swatch tactile"></span>Tactile Dark</button>
+        </div>
+      </div>
       <div class="field">
         <div class="field-label"><span>📖 Pages</span><span class="hint" id="pageHint"></span></div>
         <div class="range-row">
@@ -272,8 +280,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=44"></script>
-<script src="progress.js?v=44"></script>
-<script src="app.js?v=44"></script>
+<script src="srs.js?v=45"></script>
+<script src="progress.js?v=45"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>
