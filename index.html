@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=27">
 </head>
 <body>
 <div id="app">
@@ -21,6 +21,12 @@
       <h1>Lëtzebuergesch <span>Flashcards</span></h1>
       <p class="sub">Schwätzt Dir Lëtzebuergesch? <b>A2</b></p>
     </header>
+
+    <!-- spaced-repetition memory summary (hidden until you've studied something) -->
+    <div class="mem-bar" id="memBar" hidden>
+      <div class="mem-stats" id="memStats"></div>
+      <button class="mem-review" id="reviewDueBtn" type="button" hidden>🔁 Review <b id="dueCount">0</b> due</button>
+    </div>
 
     <div class="card-panel">
       <div class="field">
@@ -167,6 +173,7 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=26"></script>
+<script src="srs.js?v=27"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

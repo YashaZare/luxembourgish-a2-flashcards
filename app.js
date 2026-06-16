@@ -53,10 +53,16 @@ async function boot(){
     return;
   }
   $('#loading').classList.add('hidden');
+  if(global_SRS()) SRS.store.load();
+  state.cardByWord = {};
+  for(const c of state.data.cards) state.cardByWord[c.w] = c;
   buildSetup();
   restoreSettings();
   recount();
+  renderMemory();
 }
+// SRS is optional (separate script); guard so the app still runs if it failed to load
+function global_SRS(){ return typeof SRS !== 'undefined' && SRS; }
 
 function buildSetup(){
   const d = state.data;
@@ -120,6 +126,7 @@ function buildSetup(){
   $('#shuffle').onchange = persist;
   if($('#autoPlay')) $('#autoPlay').onchange = ()=>{ state.autoplay=$('#autoPlay').checked; persist(); };
   $('#startBtn').onclick = start;
+  if($('#reviewDueBtn')) $('#reviewDueBtn').onclick = startReviewDue;
   syncGroupChips();
 }
 
@@ -184,6 +191,7 @@ function start(){
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
   state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
   syncPlayFab();
+  state.reviewMode=false;
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
@@ -304,6 +312,8 @@ function grade(verdict){               // 'got' | 'miss'
   if(state.animating) return;
   const c=state.deck[state.idx]; if(!c) return;
   state.results[c.w]=verdict;
+  // feed the spaced-repetition memory: right swipe = "Good", left = "Again"
+  if(global_SRS()) SRS.store.grade(c.w, verdict==='got'?SRS.GRADE.GOOD:SRS.GRADE.AGAIN);
   showAnswerToast(c, verdict);
   state.animating=true;
   const sw=$('#swipe'), dir=verdict==='got'?1:-1;
@@ -363,7 +373,11 @@ function done(){
   const got=Object.values(state.results).filter(x=>x==='got').length;
   const miss=Object.values(state.results).filter(x=>x==='miss').length;
   $('#progBar').style.width='100%';
-  $('#doneStats').innerHTML = `You went through <b>${state.deck.length}</b> cards.<br>✓ ${got} got &nbsp; • &nbsp; ↻ ${miss} to review`;
+  let extra='';
+  if(global_SRS()){ const t=SRS.store.totals();
+    extra = `<br><span class="done-mem">🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
+            (t.due?` · 🔁 ${t.due} still due`:` · all reviews cleared ✓`)+`</span>`; }
+  $('#doneStats').innerHTML = `You went through <b>${state.deck.length}</b> cards.<br>✓ ${got} got &nbsp; • &nbsp; ↻ ${miss} to review${extra}`;
   $('#reviewMissed').style.display = miss?'':'none';
   show('done');
 }
@@ -482,6 +496,38 @@ function show(id){
   window.scrollTo(0,0);
   const sec=$('#'+id); sec.setAttribute('tabindex','-1');
   try{ sec.focus({preventScroll:true}); }catch(e){ sec.focus(); }
+  if(id==='setup') renderMemory();
+}
+
+// ---- spaced repetition: memory summary + "review due" ----
+function renderMemory(){
+  const bar=$('#memBar'); if(!bar || !global_SRS()) return;
+  const t=SRS.store.totals();
+  const btn=$('#reviewDueBtn'), stats=$('#memStats');
+  if(t.seen===0){                       // brand-new user — keep the screen clean
+    bar.hidden=true; return;
+  }
+  bar.hidden=false;
+  if(stats) stats.innerHTML =
+    `🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
+    (t.due?` · <span class="due">🔁 ${t.due} due</span>`:` · all reviewed ✓`);
+  if(btn){
+    btn.hidden = !t.due;
+    $('#dueCount').textContent = t.due;
+  }
+}
+function startReviewDue(){
+  if(!global_SRS()) return;
+  const due=SRS.store.dueWords();                    // most-overdue first
+  const deck=due.map(w=>state.cardByWord[w]).filter(Boolean).slice(0,120);
+  if(!deck.length) return;
+  ensureCtx();
+  state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
+  syncPlayFab();
+  state.range=null;                                  // due review spans all pages
+  state.reviewMode=true;
+  state.deck=deck; state.idx=0; state.revealed=false; state.results={};
+  show('study'); render(); playTutorial();
 }
 function lessonOfPage(p){
   const lr=state.data.lessonRanges||[];

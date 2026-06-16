@@ -207,6 +207,22 @@ input{font:inherit}
 @keyframes bobL{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(-8px)}}
 @keyframes bobR{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(8px)}}
 
+/* spaced-repetition memory summary on the setup screen */
+.mem-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;
+  padding:11px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.mem-bar[hidden]{display:none}
+.mem-stats{flex:1;min-width:0;font-size:13.5px;color:var(--muted)}
+.mem-stats b{color:var(--ink);font-weight:800}
+.mem-stats .due{color:var(--accent);font-weight:800}
+.mem-review{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:800;
+  color:#06281f;background:linear-gradient(180deg,#43e0b4,var(--accent));border-radius:999px;
+  padding:9px 16px;box-shadow:0 4px 14px rgba(52,211,166,.35);-webkit-tap-highlight-color:transparent}
+.mem-review[hidden]{display:none}
+.mem-review:active{transform:scale(.97)}
+.mem-review b{font-weight:900}
+.done-mem{display:inline-block;margin-top:8px;font-size:14px;color:var(--muted)}
+.done-mem b{color:var(--ink)}
+
 /* auto-play on/off toggle — sits inside the bottom bar, same row height as the
    prev/reshuffle links so it adds no extra height and never pushes the card up.
    Muted (grey) when auto-play is off, blue when on. It only toggles; never plays. */
