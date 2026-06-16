@@ -288,6 +288,23 @@ function setReveal(v){
 }
 function reveal(){ setReveal(!state.revealed); }
 function frontFace(){ return document.querySelector('#flash .face.front'); }
+// confidence on a RIGHT swipe is read from where the card is dropped vertically:
+// top of the card area = Easy (green), bottom = Hard (orange), middle = Good
+function confFromY(y){
+  const wrap=$('#flashWrap'); const r=wrap.getBoundingClientRect();
+  let f = 1 - (y - r.top)/r.height; f = Math.min(Math.max(f,0),1);   // 1 = top/easy … 0 = bottom/hard
+  if(f>=0.6)  return {f, grade:4, label:'EASY', cls:'easy', color:'var(--accent)'};
+  if(f>=0.3)  return {f, grade:3, label:'GOOD', cls:'good', color:'#7bd88f'};
+  return            {f, grade:2, label:'HARD', cls:'hard', color:'var(--gold)'};
+}
+function showConfLine(on, cg){
+  const line=$('#confLine'); if(!line) return;
+  if(!on){ line.classList.remove('show'); return; }
+  line.classList.add('show');
+  const dot=$('#confDot'), lab=$('#confLabel'), top=((1-cg.f)*100)+'%';
+  if(dot){ dot.style.top=top; dot.className='conf-dot '+cg.cls; }
+  if(lab){ lab.style.top=top; lab.className='conf-label '+cg.cls; lab.textContent=cg.label; }
+}
 function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
   const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
 function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open');
@@ -297,29 +314,35 @@ function resetSwipe(){
   sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='';
   $('#tint').style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
 }
-function showAnswerToast(c, verdict){
+// FSRS grade → short label shown on the stamp/toast
+const GRADE_LABEL = {1:'AGAIN', 2:'HARD', 3:'GOOD', 4:'EASY'};
+function showAnswerToast(c, verdict, g){
   const langs=[...state.selLangs].filter(l=>state.data.langs.includes(l));
   const trs=langs.map(l=>{ const t=c.tr&&c.tr[l]; if(!t) return null;
     const arr=Array.isArray(t)?t:[t]; return `${l.toUpperCase()} ${arr.slice(0,3).join(', ')}${arr.length>3?'…':''}`; }).filter(Boolean);
   const el=$('#ansToast');
   el.className='ans-toast '+verdict;
-  el.innerHTML=`<div class="aw">${esc(c.w)}<span class="verdict">${verdict==='got'?'✓ known':'↻ review'}</span></div>`+
+  const tag = verdict==='got' ? `✓ ${(GRADE_LABEL[g]||'GOOD').toLowerCase()}` : '↻ review';
+  el.innerHTML=`<div class="aw">${esc(c.w)}<span class="verdict">${tag}</span></div>`+
     (trs.length?`<div class="at">${esc(trs.join('  ·  '))}</div>`:`<div class="at">— no translation —</div>`);
   void el.offsetWidth; el.classList.add('show');
   clearTimeout(state.toastT); state.toastT=setTimeout(()=>el.classList.remove('show'), 8100);
 }
-function grade(verdict){               // 'got' | 'miss'
+// verdict 'got'|'miss' drives the visual; srsGrade (1–4) feeds the scheduler;
+// flyDir 'left'|'right'|'up' is the exit animation.
+function grade(verdict, srsGrade, flyDir){
   if(state.animating) return;
   const c=state.deck[state.idx]; if(!c) return;
   state.results[c.w]=verdict;
-  // feed the spaced-repetition memory: right swipe = "Good", left = "Again"
-  if(global_SRS()) SRS.store.grade(c.w, verdict==='got'?SRS.GRADE.GOOD:SRS.GRADE.AGAIN);
-  showAnswerToast(c, verdict);
+  const g = srsGrade || (verdict==='got' ? 3 : 1);   // default right=Good, left=Again
+  if(global_SRS()) SRS.store.grade(c.w, g);
+  showAnswerToast(c, verdict, g);
   state.animating=true;
-  const sw=$('#swipe'), dir=verdict==='got'?1:-1;
+  const sw=$('#swipe');
   $('#peek').classList.add('rise');     // the next card (already behind) rises to the front
   sw.style.transition='transform .34s ease-out, opacity .34s ease-out';
-  sw.style.transform=`translateX(${dir*140}%) rotate(${dir*18}deg)`;
+  if(flyDir==='up'){ sw.style.transform='translateY(-135%) scale(.86)'; }
+  else { const dir = verdict==='got'?1:-1; sw.style.transform=`translateX(${dir*140}%) rotate(${dir*18}deg)`; }
   sw.style.opacity='0';
   setTimeout(()=>{
     state.animating=false;
@@ -398,8 +421,10 @@ function wireStudy(){
   flash.onkeydown = e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); stopTutorial(); reveal(); } };
 
   // ---- swipe (pointer = touch + mouse) ----
-  let dragging=false, deciding=false, axis=null, x0=0, y0=0, dx=0, startedInHints=false;
-  const THRESH=88;
+  let dragging=false, deciding=false, axis=null, x0=0, y0=0, dx=0, dy=0, lastY=0, startedInHints=false;
+  const THRESH=88, VTHRESH=78;
+  function resetStamp(){ const s=$('#stampGot'); s.style.opacity=0; s.className='stamp got'; s.textContent='KNOW IT ✓';
+    $('#stampMiss').style.opacity=0; }
   // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
   // hints body must NOT collapse it
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
@@ -436,26 +461,48 @@ function wireStudy(){
   }
   function move(e){
     if(!deciding && !dragging) return;
-    const ddx=e.clientX-x0, ddy=e.clientY-y0;
+    const ddx=e.clientX-x0, ddy=e.clientY-y0; lastY=e.clientY;
     if(deciding){
-      if(Math.abs(ddx)<8 && Math.abs(ddy)<8) return;       // not enough movement to decide
-      if(Math.abs(ddx) >= Math.abs(ddy)){ axis='x'; engage(e); }   // horizontal → swipe
-      else { axis='y'; deciding=false; return; }           // vertical → let it scroll natively
+      if(Math.abs(ddx)<8 && Math.abs(ddy)<8) return;            // not enough movement to decide
+      if(Math.abs(ddx) >= Math.abs(ddy)){ axis='x'; engage(e); }        // horizontal → swipe L/R
+      else if(!startedInHints && ddy<0){ axis='up'; engage(e); }        // upward on the card → "perfect"
+      else { axis='y'; deciding=false; return; }                        // down / in-tips → native scroll
     }
     if(!dragging) return;
-    dx=ddx;
+    if(axis==='up'){                          // swipe up = perfect / Easy (push far out)
+      dy=Math.min(ddy,0);
+      const t=Math.min(-dy/VTHRESH,1);
+      sw.style.transform=`translateY(${dy}px) scale(${1-t*0.05})`;
+      tint.style.background='var(--accent)'; tint.style.opacity=t*0.30;
+      const s=$('#stampGot'); s.textContent='PERFECT ✓'; s.className='stamp got easy'; s.style.opacity=t;
+      $('#stampMiss').style.opacity=0; showConfLine(false);
+      return;
+    }
+    dx=ddx;                                   // horizontal
     sw.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`;
     const t=Math.min(Math.abs(dx)/THRESH,1);
-    tint.style.background = dx>=0?'var(--accent)':'var(--warn)';
-    tint.style.opacity = t*0.32;
-    $('#stampGot').style.opacity = dx>0? t : 0;
-    $('#stampMiss').style.opacity = dx<0? t : 0;
+    if(dx>0){                                 // RIGHT → confidence set by vertical drop position
+      const cg=confFromY(lastY);
+      showConfLine(true, cg);
+      tint.style.background=cg.color; tint.style.opacity=t*0.30;
+      const s=$('#stampGot'); s.textContent=cg.label+' ✓'; s.className='stamp got '+cg.cls; s.style.opacity=t;
+      $('#stampMiss').style.opacity=0;
+    } else {                                  // LEFT → Again
+      showConfLine(false);
+      tint.style.background='var(--warn)'; tint.style.opacity=t*0.30;
+      $('#stampMiss').style.opacity=t; $('#stampGot').style.opacity=0;
+    }
   }
   function up(){
-    const wasDragging=dragging;
-    deciding=false; dragging=false; sw.classList.remove('dragging');
-    if(wasDragging && Math.abs(dx)>=THRESH){ grade(dx>0?'got':'miss'); return; }
-    if(!wasDragging && axis===null && !startedInHints){    // a genuine tap, not on the tips
+    const wasDragging=dragging, ax=axis;
+    deciding=false; dragging=false; sw.classList.remove('dragging'); showConfLine(false);
+    if(wasDragging && ax==='up' && -dy>=VTHRESH){ grade('got', 4, 'up'); resetStamp(); return; }
+    if(wasDragging && ax==='x' && Math.abs(dx)>=THRESH){
+      if(dx>0) grade('got', confFromY(lastY).grade, 'right');
+      else grade('miss', 1, 'left');
+      resetStamp(); return;
+    }
+    if(!wasDragging && ax===null && !startedInHints){    // a genuine tap, not on the tips
       if(state.revealed){ reveal(); }             // on the answer side: tap flips back
       else {
         const f=frontFace(), open=f&&f.classList.contains('hints-open');
@@ -469,7 +516,7 @@ function wireStudy(){
       }
     }
     sw.style.transition='transform .25s, opacity .25s'; sw.style.transform='';
-    tint.style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
+    tint.style.opacity=0; resetStamp();
   }
   sw.addEventListener('pointerdown',down);
   sw.addEventListener('pointermove',move);
@@ -482,11 +529,15 @@ function wireStudy(){
     if((e.key===' '||e.key==='Enter') && e.target.closest && e.target.closest('button')) return;
     if(state.tutorial) stopTutorial();
     if(e.key===' '||e.key==='Enter'){ e.preventDefault(); reveal(); }
-    else if(e.key==='ArrowRight') grade('got');
-    else if(e.key==='ArrowLeft')  grade('miss');
+    else if(e.key==='ArrowRight') grade('got', 3, 'right');             // Good
+    else if(e.key==='ArrowLeft')  grade('miss', 1, 'left');             // Again
+    else if(e.key==='ArrowUp'){ e.preventDefault(); grade('got', 4, 'up'); }  // Easy / perfect
     else if(e.key==='ArrowDown'){ e.preventDefault(); toggleHints(); }
-    else if(e.key==='1') grade('miss');
-    else if(e.key==='2') grade('got');
+    // number keys = explicit confidence: 1 Again · 2 Hard · 3 Good · 4 Easy
+    else if(e.key==='1') grade('miss', 1, 'left');
+    else if(e.key==='2') grade('got', 2, 'right');
+    else if(e.key==='3') grade('got', 3, 'right');
+    else if(e.key==='4') grade('got', 4, 'up');
   });
 }
 

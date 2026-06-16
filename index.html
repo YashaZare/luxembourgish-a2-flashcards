@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 <div id="app">
@@ -91,6 +91,14 @@
     <div class="flash-wrap" id="flashWrap">
       <div class="edge-hint left" id="hintLeft">✗ don't know</div>
       <div class="edge-hint right" id="hintRight">know it ✓</div>
+      <div class="edge-hint top" id="hintTop">↑ perfect</div>
+      <!-- confidence gauge: appears only while swiping right; drop higher = easier -->
+      <div class="conf-line" id="confLine" aria-hidden="true">
+        <span class="conf-cap easy">EASY</span>
+        <span class="conf-cap hard">HARD</span>
+        <div class="conf-dot" id="confDot"></div>
+        <div class="conf-label" id="confLabel"></div>
+      </div>
       <!-- the next card, always rendered behind so it shows instantly on swipe -->
       <div class="peek" id="peek">
         <div class="flash">
@@ -141,7 +149,7 @@
       <!-- one-time-per-batch swipe tutorial -->
       <div class="tut hidden" id="tut">
         <div class="tut-arrow l">←</div><div class="tut-arrow r">→</div>
-        <div class="tut-text">Swipe <b class="g">right if you know it</b><br>· <b class="r">left if you don't</b></div>
+        <div class="tut-text">Swipe <b class="g">right if you know it</b> · <b class="r">left if you don't</b><br><span class="tut-sub">drop higher = easier · swipe ↑ for perfect</span></div>
       </div>
     </div>
 
@@ -173,7 +181,7 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=27"></script>
-<script src="app.js?v=27"></script>
+<script src="srs.js?v=28"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
