@@ -20,14 +20,31 @@ const state = {
   selTypes: new Set(),
   selLangs: new Set(['en']),
   deck: [], idx: 0, flipped: false,
+  range: null, // {a,b} pages being studied
   results: {}, // word -> 'got' | 'miss'
 };
 
+// friendly labels for the occurrence types shown on a card
+const TYPE_LABEL = {
+  'dialogue':'dialogue','narration':'text','explanation':'text','example':'example',
+  'question':'question','instruction':'task','title':'title','subtitle':'subtitle',
+  'section-heading':'heading','topic-heading':'heading','illustration-text':'illustration',
+  'label':'label','caption':'caption','vocabulary':'vocab list','word-list-item':'vocab list',
+  'grammar-term':'grammar','grammar-example':'grammar','table-cell':'table','table-header':'table',
+  'footnote':'footnote','page-number-word':'page number','answer-key':'answer key','other':'other',
+};
+function typeLabels(types){
+  const seen=[]; types.forEach(t=>{ const l=TYPE_LABEL[t]||t; if(!seen.includes(l)) seen.push(l); });
+  return seen;
+}
+
 const LS = 'lux-fc-settings';
+
+const DATA_VERSION = '3';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
-    const res = await fetch('data/flashcards.json', {cache:'force-cache'});
+    const res = await fetch('data/flashcards.json?v='+DATA_VERSION, {cache:'force-cache'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     state.data = await res.json();
   }catch(e){
@@ -161,6 +178,7 @@ function start(){
   let deck=currentFilter();
   if($('#shuffle').checked) deck=shuffle(deck);
   if(!deck.length) return;
+  state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
   state.deck=deck; state.idx=0; state.flipped=false; state.results={};
   show('study'); render();
 }
@@ -168,11 +186,22 @@ function render(){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
   setFlip(false);
-  $('#frontLesson').textContent = (c.ls&&c.ls[0])||'';
+  $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
   const ctx = (c.ex&&c.ex.length)?c.ex[0]:'';
   $('#frontCtx').innerHTML = ctx?escapeEmph(ctx,c.w):'';
+  // "marked with the pages it's used in, and where" — pages (in-range first) + location types
+  const r=state.range; const PCAP=12;
+  let pages=c.pg.slice();
+  if(r){ const inR=pages.filter(p=>p>=r.a&&p<=r.b), out=pages.filter(p=>p<r.a||p>r.b); pages=inR.concat(out); }
+  const shown=pages.slice(0,PCAP).map(p=>(r&&p>=r.a&&p<=r.b)?`<b>${p}</b>`:`${p}`);
+  const moreP=pages.length>PCAP?` +${pages.length-PCAP}`:'';
+  const types=typeLabels(c.ty);
+  const tShown=types.slice(0,6).join(', ')+(types.length>6?`, +${types.length-6}`:'');
+  $('#frontMeta').innerHTML =
+    `<span class="m-pages">📄 ${c.pg.length} page${c.pg.length>1?'s':''}: ${shown.join(', ')}${moreP}</span>`+
+    `<span class="m-types">🏷 ${esc(tShown)}</span>`;
   // back
   $('#backPos').textContent = c.pos||'';
   const langs=[...state.selLangs].filter(l=>d.langs.includes(l));
@@ -190,8 +219,9 @@ function render(){
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
-  const p = (c.pg&&c.pg.length)?Math.min(...c.pg):'?';
-  $('#deckMeta').textContent = `page ${p} · freq ${c.f??''}`;
+  const inRangeN = r? c.pg.filter(p=>p>=r.a&&p<=r.b).length : c.pg.length;
+  $('#deckMeta').textContent = r && inRangeN>1 ? `${inRangeN}× in pp.${r.a}–${r.b} · ${c.f}× in book`
+                                              : `${c.f}× in book`;
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
 }
@@ -256,6 +286,18 @@ function show(id){
   window.scrollTo(0,0);
   const sec=$('#'+id); sec.setAttribute('tabindex','-1');
   try{ sec.focus({preventScroll:true}); }catch(e){ sec.focus(); }
+}
+function lessonOfPage(p){
+  const lr=state.data.lessonRanges||[];
+  for(const [a,b,name] of lr) if(p>=a&&p<=b) return name;
+  return null;
+}
+function relevantLesson(c){
+  // the lesson of the earliest page within the studied range (what the learner is on), else earliest overall
+  const r=state.range;
+  const pages=c.pg.slice().sort((x,y)=>x-y);
+  if(r){ const inR=pages.find(p=>p>=r.a&&p<=r.b); if(inR!=null){ const l=lessonOfPage(inR); if(l) return l; } }
+  const l0=lessonOfPage(pages[0]); return l0||(c.ls&&c.ls[0])||'';
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function esc(s){ return (s+'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }

@@ -100,6 +100,10 @@ input{font:inherit}
 .ipa{color:var(--brand2);font-size:18px;margin-top:8px}
 .ctx{color:var(--muted);font-size:14.5px;margin-top:18px;line-height:1.45;max-width:90%}
 .ctx b{color:var(--ink);font-weight:700}
+.meta{margin-top:18px;display:flex;flex-direction:column;gap:6px;align-items:center;max-width:94%}
+.meta span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.meta .m-pages b{color:var(--accent);font-weight:800}
+.meta .m-types{color:var(--brand2);font-weight:600}
 .pos{position:absolute;top:18px;left:0;right:0;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
 .answer{display:flex;flex-direction:column;gap:12px;width:100%}
 .answer .ln{display:flex;align-items:baseline;gap:10px;justify-content:center;flex-wrap:wrap}
