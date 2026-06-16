@@ -121,19 +121,19 @@ input{font:inherit}
 
 /* confidence gauge — visible only while swiping right; vertical drop sets Hard→Easy */
 .conf-line{position:absolute;right:8px;top:10%;bottom:10%;width:10px;border-radius:999px;z-index:4;
-  background:linear-gradient(to top,#e8a25c 0%,var(--gold) 34%,#a7ddc4 62%,var(--accent-deep) 100%);
+  background:linear-gradient(to top,#e8a25c 0%,#e0c061 34%,#7fd0ac 62%,#3fc795 100%);
   opacity:0;transform:translateX(14px) scaleY(.85);transform-origin:center;pointer-events:none;
   transition:opacity .12s linear,transform .28s cubic-bezier(.2,.8,.25,1);box-shadow:0 4px 16px rgba(96,92,80,.22)}
 .conf-line.show{transform:translateX(0) scaleY(1)}   /* opacity is set inline, tied to drag distance */
 .conf-cap{position:absolute;right:16px;font-size:10px;font-weight:800;letter-spacing:.5px;opacity:.7;transform-origin:right center;transition:transform .1s ease, opacity .1s ease}
-.conf-cap.easy{top:-4px;color:var(--accent-deep)}
+.conf-cap.easy{top:-4px;color:#3fc795}
 .conf-cap.hard{bottom:-4px;color:#cf8a45}
 .conf-dot{position:absolute;right:-6px;width:22px;height:22px;margin-top:-11px;border-radius:50%;
   background:#fff;border:3px solid var(--accent-deep);box-shadow:0 2px 8px rgba(96,92,80,.3);transition:border-color .1s}
-.conf-dot.good{border-color:#7bd0ac}.conf-dot.hard{border-color:#dca360}.conf-dot.easy{border-color:var(--accent-deep)}
+.conf-dot.good{border-color:#7bd0ac}.conf-dot.hard{border-color:#dca360}.conf-dot.easy{border-color:#3fc795}
 .conf-label{position:absolute;right:26px;margin-top:-10px;font-size:13px;font-weight:900;letter-spacing:.5px;
   padding:3px 10px;border-radius:999px;background:#ffffff;color:var(--ink);white-space:nowrap;box-shadow:var(--sh-sm)}
-.conf-label.easy{color:var(--accent-deep)}.conf-label.good{color:#3fa07f}.conf-label.hard{color:#cf8a45}
+.conf-label.easy{color:#3fc795}.conf-label.good{color:#5cc39c}.conf-label.hard{color:#cf8a45}
 
 .swipe{position:absolute;inset:0;cursor:grab;touch-action:pan-y;will-change:transform;z-index:1;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -222,10 +222,10 @@ input{font:inherit}
 /* swipe tint + stamps */
 .tint{position:absolute;inset:0;border-radius:28px;opacity:0;pointer-events:none;z-index:2;transition:opacity .1s}
 .stamp{position:absolute;top:26px;font-size:24px;font-weight:900;letter-spacing:1px;padding:6px 14px;border-radius:14px;border:3px solid;opacity:0;z-index:3;pointer-events:none;background:#ffffffd0}
-.stamp.got{left:22px;color:var(--accent-deep);border-color:var(--accent-deep);transform:rotate(-12deg)}
+.stamp.got{left:22px;color:#3fc795;border-color:#3fc795;transform:rotate(-12deg)}
 .stamp.got.hard{color:#cf8a45;border-color:#cf8a45}
-.stamp.got.good{color:#3fa07f;border-color:#7bd0ac}
-.stamp.got.easy{color:var(--accent-deep);border-color:var(--accent-deep)}
+.stamp.got.good{color:#5cc39c;border-color:#7bd0ac}
+.stamp.got.easy{color:#3fc795;border-color:#3fc795}
 .stamp.miss{right:22px;color:var(--warn-deep);border-color:var(--warn-deep);transform:rotate(12deg)}
 
 /* tutorial overlay (plays at each batch start) */
@@ -612,10 +612,13 @@ input{font:inherit}
 /* misc dark variants */
 [data-theme="tactile"] .listen-cue{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:var(--sh-clay),0 8px 20px #0008}
 [data-theme="tactile"] .listen-cue.static{background:linear-gradient(180deg,#5a4636,#463528)}
-[data-theme="tactile"] .conf-label{background:#1a1a1ee6;color:var(--ink)}
+[data-theme="tactile"] .conf-label{background:#1a1a1ee6}   /* keep the .easy/.good/.hard text colour */
 [data-theme="tactile"] .stamp{background:#1a1a1ecc}
 [data-theme="tactile"] .fly-msg{background:#202024;color:var(--ink)}
 [data-theme="tactile"] .tut{background:rgba(24,24,28,.9)}
 [data-theme="tactile"] .sheet-scrim,[data-theme="tactile"] .game-result{background:rgba(0,0,0,.55)}
 [data-theme="tactile"] .menu-item{background:var(--panel2);box-shadow:inset 1px 1px 3px #141418}
 [data-theme="tactile"] .homo{background:#00000033}
+/* readable answer translation on the dark card (clay uses a dark green, illegible on dark) */
+[data-theme="tactile"] .answer .tr{color:#a9e2c8}
+[data-theme="tactile"] .edge-hint.right{color:#4fc79a}   /* "know it ✓" stays green, not brand-orange */

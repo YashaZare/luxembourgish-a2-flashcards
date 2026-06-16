@@ -330,9 +330,10 @@ function frontFace(){ return document.querySelector('#flash .face.front'); }
 function confFromY(y){
   const wrap=$('#flashWrap'); const r=wrap.getBoundingClientRect();
   let f = 1 - (y - r.top)/r.height; f = Math.min(Math.max(f,0),1);   // 1 = top/easy … 0 = bottom/hard
-  if(f>=0.6)  return {f, grade:4, label:'EASY', cls:'easy', color:'var(--accent)'};
+  // green = easy/good, amber = hard — kept theme-independent so "easy" never reads as the orange brand
+  if(f>=0.6)  return {f, grade:4, label:'EASY', cls:'easy', color:'#3fc795'};
   if(f>=0.3)  return {f, grade:3, label:'GOOD', cls:'good', color:'#7bd88f'};
-  return            {f, grade:2, label:'HARD', cls:'hard', color:'var(--gold)'};
+  return            {f, grade:2, label:'HARD', cls:'hard', color:'#e0a857'};
 }
 function showConfLine(on, cg, t){
   const line=$('#confLine'); if(!line) return;
