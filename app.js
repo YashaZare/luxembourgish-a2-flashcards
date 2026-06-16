@@ -22,6 +22,7 @@ const state = {
   deck: [], idx: 0, flipped: false,
   range: null, // {a,b} pages being studied
   results: {}, // word -> 'got' | 'miss'
+  autoplay: false, // auto-play pronunciation on each new card
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -40,7 +41,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '8';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '9';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
@@ -117,6 +118,7 @@ function buildSetup(){
     state.selTypes.clear(); syncIndividual(); recount(); persist(); };
   $('#onlyTranslated').onchange = ()=>{recount();persist();};
   $('#shuffle').onchange = persist;
+  if($('#autoPlay')) $('#autoPlay').onchange = ()=>{ state.autoplay=$('#autoPlay').checked; persist(); };
   $('#startBtn').onclick = start;
   syncGroupChips();
 }
@@ -179,6 +181,7 @@ function start(){
   if($('#shuffle').checked) deck=shuffle(deck);
   if(!deck.length) return;
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
+  state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
@@ -195,6 +198,9 @@ function render(skipPeek){
   } else { $('#frontBase').innerHTML = ''; }
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
+  // auto-play the word's pronunciation when a new card appears (if the user enabled it).
+  // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
+  if(hasAudio && state.autoplay) playAudio(c);
 
   const r=state.range;
   // pages + types summary (hidden until the hint is opened)
@@ -224,7 +230,7 @@ function render(skipPeek){
   const exs=(c.ex||[]).slice(0,2);
   if(exs.length){
     h += `<div class="h-grp">dictionary example</div>`;
-    h += exs.map(s=>`<p class="hx"><span class="exl">e.g.</span> ${escapeEmph(s,c.w)}</p>`).join('');
+    h += exs.map(it=>`<p class="hx"><span class="exl">e.g.</span> ${exItemHTML(it,c.w)}</p>`).join('');
   }
   h += `<div class="h-meta">${metaHTML}</div>`;
   $('#frontHints').innerHTML = h || `<p class="hnone">no extra context</p>`;
@@ -242,7 +248,7 @@ function render(skipPeek){
     ans.appendChild(ln);
   });
   const exBack = (c.ex && c.ex.length>1) ? c.ex[1] : (c.ex && c.ex[0]);
-  $('#backEx').innerHTML = exBack ? `<span class="exl">e.g.</span> ${esc(exBack)}` : '';
+  $('#backEx').innerHTML = exBack ? `<span class="exl">e.g.</span> ${exItemHTML(exBack,c.w)}` : '';
   // homonym reminder: this word also exists with a different capitalisation + meaning
   if(c.homo && c.homo.length>1){
     const parts = c.homo.map(h=>{
@@ -382,12 +388,17 @@ function wireStudy(){
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
   $('#frontSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
+  // example-sentence speakers are rendered into card HTML each turn → delegate
+  flash.addEventListener('click', (e)=>{
+    const b=e.target.closest && e.target.closest('.exsay');
+    if(b){ e.stopPropagation(); playExampleAudio(b.dataset.h, b); }
+  });
 
   function down(e){
     if(state.animating) return;
     if(e.target.closest && e.target.closest('a')) return;  // let links (e.g. LOD) work natively
     // let the open hints scroll/tap freely, and let the toggle handle itself
-    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle') || e.target.closest('.say'))) return;
+    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle') || e.target.closest('.say') || e.target.closest('.exsay'))) return;
     if(state.tutorial) stopTutorial();
     dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
     sw.style.transition='none'; sw.classList.add('dragging');
@@ -475,6 +486,25 @@ function playAudio(card){
   audioEl.src='audio/'+id+'.m4a';
   audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback
 }
+function playExampleAudio(hash, btn){
+  if(!hash) return;
+  let fellBack=false;
+  audioEl.onplaying = ()=>btn&&btn.classList.add('playing');
+  audioEl.onended = audioEl.onpause = ()=>$$('.exsay.playing').forEach(b=>b.classList.remove('playing'));
+  audioEl.onerror = ()=>{ if(fellBack) return; fellBack=true;   // local missing → stream from LOD
+    audioEl.src=`https://lod.lu/uploads/examples/AAC/${hash.slice(0,2)}/${hash}.m4a`; audioEl.play().catch(()=>{}); };
+  $$('.say.playing,.exsay.playing').forEach(b=>b.classList.remove('playing'));
+  try{ audioEl.pause(); audioEl.currentTime=0; }catch(e){}
+  audioEl.src='audio/ex/'+hash+'.m4a';
+  audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback
+}
+// render one LOD example (string or {s,a}) with an inline speaker when a recording exists
+function exItemHTML(item, word){
+  const s = (item && typeof item==='object') ? item.s : item;
+  const a = (item && typeof item==='object') ? item.a : null;
+  const spk = a ? ` <button class="exsay" type="button" data-h="${esc(a)}" aria-label="Play example sentence">🔊</button>` : '';
+  return `${escapeEmph(s,word)}${spk}`;
+}
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function esc(s){ return (s+'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 function escapeEmph(sentence,word){
@@ -489,7 +519,8 @@ function escapeEmph(sentence,word){
 function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
-    onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked };
+    onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
+    autoplay:!!($('#autoPlay')&&$('#autoPlay').checked) };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
@@ -511,6 +542,7 @@ function restoreSettings(){
   }
   if(typeof s.onlyTr==='boolean') $('#onlyTranslated').checked=s.onlyTr;
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
+  if(typeof s.autoplay==='boolean' && $('#autoPlay')) $('#autoPlay').checked=s.autoplay;
   syncSlider(); paintSlider();
 }
 

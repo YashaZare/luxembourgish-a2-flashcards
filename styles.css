@@ -156,6 +156,14 @@ input{font:inherit}
 .say:active{transform:scale(.96)}
 .say.playing{color:var(--accent);border-color:#1d5a48;background:#10362c}
 @media (prefers-color-scheme:light){ .say{background:#eef3ff} .say.playing{background:#eafaf4;color:#1aa67e} }
+/* inline example-sentence speaker (next to "e.g." lines) */
+.exsay{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
+  width:24px;height:24px;margin-left:4px;padding:0;font-size:12px;line-height:1;cursor:pointer;
+  color:var(--brand2);background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+  -webkit-tap-highlight-color:transparent}
+.exsay:active{transform:scale(.9)}
+.exsay.playing{color:var(--accent);border-color:#1d5a48;background:#10362c}
+@media (prefers-color-scheme:light){ .exsay{background:#eef3ff} .exsay.playing{background:#eafaf4;color:#1aa67e} }
 .lod-link{font-size:13px}
 .lod-link:empty{display:none}
 .lod-link a{color:var(--brand2);font-weight:700;text-decoration:none;border-bottom:1px solid #7aa2ff55;padding:2px 0}
