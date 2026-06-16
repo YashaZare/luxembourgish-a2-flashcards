@@ -207,16 +207,17 @@ input{font:inherit}
 @keyframes bobL{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(-8px)}}
 @keyframes bobR{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(8px)}}
 
-/* always-present audio button — sits inside the bottom bar, same row height as the
-   prev/reshuffle links so it adds no extra height and never pushes the card up */
+/* auto-play on/off toggle — sits inside the bottom bar, same row height as the
+   prev/reshuffle links so it adds no extra height and never pushes the card up.
+   Muted (grey) when auto-play is off, blue when on. It only toggles; never plays. */
 .play-fab{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
   width:36px;height:36px;padding:0;border-radius:50%;font-size:17px;line-height:1;cursor:pointer;
-  color:#fff;background:linear-gradient(180deg,var(--brand),#3f6fe0);border:none;
-  box-shadow:0 3px 10px rgba(91,140,255,.4);-webkit-tap-highlight-color:transparent;
-  transition:transform .12s ease, opacity .2s ease, background .2s ease}
+  color:var(--muted);background:var(--panel2);border:1px solid var(--line);
+  -webkit-tap-highlight-color:transparent;transition:transform .12s ease, background .2s ease, color .2s ease, opacity .2s ease}
+.play-fab:not(.on){opacity:.7}
 .play-fab:active{transform:scale(.9)}
-.play-fab.off{opacity:.28;pointer-events:none}
-.play-fab.playing{background:linear-gradient(180deg,var(--accent),#1aa67e)}
+.play-fab.on{color:#fff;background:linear-gradient(180deg,var(--brand),#3f6fe0);border-color:transparent;
+  box-shadow:0 3px 10px rgba(91,140,255,.4)}
 
 .study-sub{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--muted);font-size:13px}
 

@@ -183,6 +183,7 @@ function start(){
   if(!deck.length) return;
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
   state.autoplay = !!($('#autoPlay') && $('#autoPlay').checked);
+  syncPlayFab();
   state.deck=deck; state.idx=0; state.revealed=false; state.results={};
   show('study'); render(); playTutorial();
 }
@@ -199,8 +200,6 @@ function render(skipPeek){
   } else { $('#frontBase').innerHTML = ''; }
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
-  // bottom-centre audio button is always in place; dim + disable it when the card has no audio
-  const fab=$('#playFab'); if(fab){ fab.classList.toggle('off',!hasAudio); fab.disabled=!hasAudio; }
   // auto-play the word's pronunciation when a new card appears (if the user enabled it).
   // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
   if(hasAudio && state.autoplay) playAudio(c);
@@ -392,7 +391,13 @@ function wireStudy(){
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
   $('#frontSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
-  if($('#playFab')) $('#playFab').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
+  // bottom button = auto-play on/off toggle only; it plays nothing on its own
+  if($('#playFab')) $('#playFab').onclick = (e)=>{
+    e.stopPropagation();
+    state.autoplay = !state.autoplay;
+    if($('#autoPlay')) $('#autoPlay').checked = state.autoplay;
+    persist(); syncPlayFab();
+  };
   // example-sentence speakers are rendered into card HTML each turn → delegate
   flash.addEventListener('click', (e)=>{
     const b=e.target.closest && e.target.closest('.exsay');
@@ -517,14 +522,22 @@ async function playUrls(urls, onStart, onEnd){
   }
   onEnd&&onEnd(); return false;
 }
-function clearPlaying(){ $$('.say.playing,.exsay.playing,.play-fab.playing').forEach(b=>b.classList.remove('playing')); }
+function clearPlaying(){ $$('.say.playing,.exsay.playing').forEach(b=>b.classList.remove('playing')); }
+// the bottom button is purely an auto-play on/off toggle — it never plays audio itself
+function syncPlayFab(){
+  const fab=$('#playFab'); if(!fab) return;
+  fab.classList.toggle('on', !!state.autoplay);
+  fab.textContent = state.autoplay ? '🔊' : '🔇';
+  fab.setAttribute('aria-pressed', state.autoplay?'true':'false');
+  fab.setAttribute('aria-label', state.autoplay?'Auto-play on — tap to turn off':'Auto-play off — tap to turn on');
+}
 function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
 function playAudio(card){
   const id = audioId(card); if(!id) return;
   clearPlaying();
   playUrls(['audio/'+id+'.m4a', 'https://lod.lu/uploads/AAC/'+id+'.m4a'],
-    ()=>$$('.say,.play-fab').forEach(b=>b.classList.add('playing')),
-    ()=>$$('.say,.play-fab').forEach(b=>b.classList.remove('playing')));
+    ()=>$$('.say').forEach(b=>b.classList.add('playing')),
+    ()=>$$('.say').forEach(b=>b.classList.remove('playing')));
 }
 function playExampleAudio(hash, btn){
   if(!hash) return;
