@@ -1,0 +1,148 @@
+{
+  "artboard": "24x24",
+  "strokeWidth": 2,
+  "strokeLinecap": "round",
+  "strokeLinejoin": "round",
+  "palettes": {
+    "light": {
+      "name": "Light cream",
+      "bg": "#F6F0E4",
+      "panel": "#EEE6D8",
+      "ink": "#26312D",
+      "secondary": "#5F6C66",
+      "accent": "#73BDA6",
+      "text": "#26312D"
+    },
+    "dark": {
+      "name": "Dark tactile",
+      "bg": "#1D2020",
+      "panel": "#282C2B",
+      "ink": "#F0E7D8",
+      "secondary": "#A99A8A",
+      "accent": "#D86B3E",
+      "text": "#F0E7D8"
+    }
+  },
+  "icons": [
+    {
+      "id": "brand-app",
+      "label": "Brand app",
+      "group": "brand"
+    },
+    {
+      "id": "flashcards",
+      "label": "Flashcards",
+      "group": "study"
+    },
+    {
+      "id": "match-game",
+      "label": "Match game",
+      "group": "study"
+    },
+    {
+      "id": "audio-silent",
+      "label": "Silent",
+      "group": "audio"
+    },
+    {
+      "id": "audio-auto-play",
+      "label": "Auto play",
+      "group": "audio"
+    },
+    {
+      "id": "audio-listening-first",
+      "label": "Listening first",
+      "group": "audio"
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "group": "controls"
+    },
+    {
+      "id": "reshuffle",
+      "label": "Reshuffle",
+      "group": "controls"
+    },
+    {
+      "id": "back-previous",
+      "label": "Back previous",
+      "group": "controls"
+    },
+    {
+      "id": "pages",
+      "label": "Pages",
+      "group": "sections"
+    },
+    {
+      "id": "word-types",
+      "label": "Word types",
+      "group": "sections"
+    },
+    {
+      "id": "languages",
+      "label": "Languages",
+      "group": "sections"
+    },
+    {
+      "id": "options",
+      "label": "Options",
+      "group": "sections"
+    },
+    {
+      "id": "theme",
+      "label": "Theme",
+      "group": "sections"
+    },
+    {
+      "id": "known",
+      "label": "Known",
+      "group": "stats"
+    },
+    {
+      "id": "due",
+      "label": "Due",
+      "group": "stats"
+    },
+    {
+      "id": "struggling",
+      "label": "Struggling",
+      "group": "stats"
+    },
+    {
+      "id": "streak",
+      "label": "Streak",
+      "group": "stats"
+    },
+    {
+      "id": "win-solved",
+      "label": "Win solved",
+      "group": "feedback"
+    },
+    {
+      "id": "times-up",
+      "label": "Time's up",
+      "group": "feedback"
+    },
+    {
+      "id": "arrow-left-dont-know",
+      "label": "Left - don't know",
+      "group": "tutorial"
+    },
+    {
+      "id": "arrow-right-know",
+      "label": "Right - know",
+      "group": "tutorial"
+    },
+    {
+      "id": "arrow-up-perfect",
+      "label": "Up - perfect",
+      "group": "tutorial"
+    },
+    {
+      "id": "arrow-down-no-idea",
+      "label": "Down - no idea",
+      "group": "tutorial"
+    }
+  ]
+}

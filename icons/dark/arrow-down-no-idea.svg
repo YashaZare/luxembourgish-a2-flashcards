@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Down - no idea</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6.5 9.4 12 14.9l5.5-5.5" stroke="#F0E7D8" />
+    <path d="M12 4.5v10.2" stroke="#D86B3E" />
+    <path d="M19 15.2v2.6" stroke="#A99A8A" />
+    <circle cx="19" cy="20" r="0.7" fill="#A99A8A" stroke="none"/>
+  </g>
+</svg>

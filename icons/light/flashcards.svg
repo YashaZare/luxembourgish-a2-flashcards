@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Flashcards</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5.4" y="4.7" width="12.2" height="8.2" rx="2.1" stroke="#5F6C66" opacity=".55"/>
+    <rect x="4.3" y="7.2" width="13.2" height="9.2" rx="2.1" stroke="#5F6C66" opacity=".75"/>
+    <rect x="6.5" y="9.7" width="13.2" height="9.2" rx="2.1" stroke="#26312D" />
+    <path d="M9.4 13.1h5.9M9.4 16h3.7" stroke="#73BDA6" />
+  </g>
+</svg>

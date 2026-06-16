@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Time's up</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.2 4.4h9.6M7.2 19.6h9.6" stroke="#26312D" />
+    <path d="M8.5 4.4c0 3.8 1.8 5.5 3.5 7.6-1.7 2.1-3.5 3.8-3.5 7.6" stroke="#26312D" />
+    <path d="M15.5 4.4c0 3.8-1.8 5.5-3.5 7.6 1.7 2.1 3.5 3.8 3.5 7.6" stroke="#26312D" />
+    <path d="M10 8h4M10 16h4" stroke="#73BDA6" />
+  </g>
+</svg>

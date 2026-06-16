@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Reshuffle</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.2 7.2h3.2c2.9 0 3.8 4.8 6.7 4.8h4.6" stroke="#F0E7D8" />
+    <path d="m16.2 4.8 3 2.4-3 2.4" stroke="#D86B3E" />
+    <path d="M4.2 16.8h3.2c2.9 0 3.8-4.8 6.7-4.8h4.6" stroke="#F0E7D8" />
+    <path d="m16.2 14.4 3 2.4-3 2.4" stroke="#D86B3E" />
+  </g>
+</svg>

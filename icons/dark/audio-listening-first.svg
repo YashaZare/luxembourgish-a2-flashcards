@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Listening first</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 13.5v-1.2a7 7 0 0 1 14 0v1.2" stroke="#F0E7D8" />
+    <rect x="3.9" y="13.1" width="3.9" height="6.2" rx="1.8" stroke="#F0E7D8" />
+    <rect x="16.2" y="13.1" width="3.9" height="6.2" rx="1.8" stroke="#F0E7D8" />
+    <path d="M9.1 8.6c1.6-1.2 4.2-1.2 5.8 0" stroke="#D86B3E" />
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Brand app</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="rotate(-7 10.5 11.8)"><rect x="5" y="4.8" width="12.8" height="12.8" rx="2.6" stroke="#5F6C66" opacity=".55"/></g>
+    <path d="M8 6h8a3 3 0 0 1 3 3v6.2a3 3 0 0 1-3 3h-4.2L8 21v-2.8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3Z" stroke="#26312D" />
+    <path d="M9 10.2h5.8M9 13.4h3.6" stroke="#73BDA6" />
+  </g>
+</svg>

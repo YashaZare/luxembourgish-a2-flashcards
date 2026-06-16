@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Match game</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.3" y="4.3" width="5.9" height="5.9" rx="1.6" stroke="#F0E7D8" />
+    <rect x="13.8" y="4.3" width="5.9" height="5.9" rx="1.6" stroke="#F0E7D8" />
+    <rect x="4.3" y="13.8" width="5.9" height="5.9" rx="1.6" stroke="#F0E7D8" />
+    <rect x="13.8" y="13.8" width="5.9" height="5.9" rx="1.6" stroke="#F0E7D8" />
+    <path d="M10.4 7.25h3.2M10.4 16.75h3.2" stroke="#D86B3E" />
+    <path d="M6.35 7.25h1.8M15.85 16.75h1.8" stroke="#A99A8A" opacity=".9"/>
+  </g>
+</svg>
