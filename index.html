@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=23">
+<link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
 <div id="app">
@@ -92,7 +92,7 @@
             <div class="face-mid">
               <div class="word" id="peekWord"></div>
               <div class="ipa" id="peekIpa"></div>
-              <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊 listen</button>
+              <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊</button>
               <div class="base-form" id="peekBase"></div>
             </div>
             <div class="face-foot"><div class="tap-hint">tap here for context ▾</div></div>
@@ -108,7 +108,7 @@
             <div class="face-mid">
               <div class="word" id="frontWord"></div>
               <div class="ipa" id="frontIpa"></div>
-              <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊 listen</button>
+              <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
               <div class="base-form" id="frontBase"></div>
             </div>
             <div class="hints" id="frontHints"></div>
@@ -124,7 +124,7 @@
               <div class="homo" id="backHomo"></div>
             </div>
             <div class="face-foot">
-              <button class="say" id="backSay" type="button" aria-label="Play pronunciation" hidden>🔊 listen</button>
+              <button class="say" id="backSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
               <div class="lod-link" id="backLod"></div>
               <div class="tap-hint">swipe to grade</div>
               <div class="meta footnote" id="backMeta"></div>
@@ -142,12 +142,11 @@
     <!-- answer reveal after a swipe -->
     <div class="ans-toast" id="ansToast" aria-live="polite"></div>
 
-    <!-- always-present audio control; auto-plays each new card, tap to replay -->
-    <button class="play-fab" id="playFab" type="button" aria-label="Play pronunciation">🔊</button>
-
     <div class="study-sub">
       <button class="link-btn" id="prevBtn">‹ prev</button>
-      <span id="deckMeta"></span>
+      <!-- always-present audio control; auto-plays each new card, tap to replay. Lives in
+           the bottom bar so it adds no height of its own and never pushes the card up. -->
+      <button class="play-fab" id="playFab" type="button" aria-label="Play pronunciation">🔊</button>
       <button class="link-btn" id="reshuffleBtn">reshuffle</button>
     </div>
   </section>
@@ -168,6 +167,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

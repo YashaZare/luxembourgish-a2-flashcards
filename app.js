@@ -177,6 +177,7 @@ function recount(){
 
 // ---- study flow ----
 function start(){
+  ensureCtx();   // unlock Web Audio within this tap so later autoplay/replay can sound
   let deck=currentFilter();
   if($('#shuffle').checked) deck=shuffle(deck);
   if(!deck.length) return;
@@ -267,8 +268,6 @@ function render(skipPeek){
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
-  // page/usage info stays hidden on the question side — it's inside the context drawer
-  $('#deckMeta').textContent = '';
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
   // pre-render the NEXT card behind, so swiping reveals it instantly (no gap)
@@ -478,32 +477,61 @@ function relevantLesson(c){
   if(r){ const inR=pages.find(p=>p>=r.a&&p<=r.b); if(inR!=null){ const l=lessonOfPage(inR); if(l) return l; } }
   const l0=lessonOfPage(pages[0]); return l0||(c.ls&&c.ls[0])||'';
 }
-// ---- pronunciation audio (LOD, self-hosted with LOD stream fallback) ----
-const audioEl = new Audio();
+// ---- pronunciation audio ----
+// Played through the Web Audio API (not an <audio> element) so iOS treats it as a
+// short sound effect rather than media playback — no lock-screen "now playing" UI.
+// LOD originals, self-hosted with a LOD stream fallback. Decoded buffers are cached.
+let actx = null;
+const bufCache = new Map();   // url -> AudioBuffer | Promise<AudioBuffer>
+let curSrc = null;
+function ensureCtx(){
+  if(!actx){ const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC){ try{ actx = new AC(); }catch(e){} } }
+  if(actx && actx.state === 'suspended') actx.resume().catch(()=>{});
+  return actx;
+}
+async function loadBuf(url){
+  const hit = bufCache.get(url);
+  if(hit) return hit;
+  const p = (async()=>{
+    const r = await fetch(url); if(!r.ok) throw new Error('http '+r.status);
+    const ab = await r.arrayBuffer();
+    return await actx.decodeAudioData(ab);
+  })();
+  bufCache.set(url, p);
+  try{ const b = await p; bufCache.set(url, b); return b; }
+  catch(e){ bufCache.delete(url); throw e; }
+}
+// play the first URL that works (local first, then LOD); toggle playing state via callbacks
+async function playUrls(urls, onStart, onEnd){
+  const ctx = ensureCtx(); if(!ctx) return false;
+  if(curSrc){ try{ curSrc.onended=null; curSrc.stop(); }catch(e){} curSrc=null; }
+  for(const url of urls){
+    try{
+      const buf = await loadBuf(url);
+      const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination);
+      src.onended = ()=>{ if(curSrc===src){ curSrc=null; onEnd&&onEnd(); } };
+      curSrc = src; onStart&&onStart(); src.start(0);
+      return true;
+    }catch(e){ /* try next URL */ }
+  }
+  onEnd&&onEnd(); return false;
+}
+function clearPlaying(){ $$('.say.playing,.exsay.playing,.play-fab.playing').forEach(b=>b.classList.remove('playing')); }
 function audioId(card){ return (card && card.lod && card.lod[0]) ? card.lod[0].id.toLowerCase() : null; }
 function playAudio(card){
   const id = audioId(card); if(!id) return;
-  let fellBack=false;
-  audioEl.onerror = ()=>{ if(fellBack) return; fellBack=true;   // local missing → stream from LOD
-    audioEl.src='https://lod.lu/uploads/AAC/'+id+'.m4a'; audioEl.play().catch(()=>{}); };
-  audioEl.onplaying = ()=>$$('.say,.play-fab').forEach(b=>b.classList.add('playing'));
-  audioEl.onended = audioEl.onpause = ()=>$$('.say,.play-fab').forEach(b=>b.classList.remove('playing'));
-  $$('.exsay.playing').forEach(b=>b.classList.remove('playing'));   // a word play cancels any example
-  try{ audioEl.pause(); audioEl.currentTime=0; }catch(e){}
-  audioEl.src='audio/'+id+'.m4a';
-  audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback
+  clearPlaying();
+  playUrls(['audio/'+id+'.m4a', 'https://lod.lu/uploads/AAC/'+id+'.m4a'],
+    ()=>$$('.say,.play-fab').forEach(b=>b.classList.add('playing')),
+    ()=>$$('.say,.play-fab').forEach(b=>b.classList.remove('playing')));
 }
 function playExampleAudio(hash, btn){
   if(!hash) return;
-  let fellBack=false;
-  audioEl.onplaying = ()=>btn&&btn.classList.add('playing');
-  audioEl.onended = audioEl.onpause = ()=>$$('.exsay.playing').forEach(b=>b.classList.remove('playing'));
-  audioEl.onerror = ()=>{ if(fellBack) return; fellBack=true;   // local missing → stream from LOD
-    audioEl.src=`https://lod.lu/uploads/examples/AAC/${hash.slice(0,2)}/${hash}.m4a`; audioEl.play().catch(()=>{}); };
-  $$('.say.playing,.exsay.playing').forEach(b=>b.classList.remove('playing'));
-  try{ audioEl.pause(); audioEl.currentTime=0; }catch(e){}
-  audioEl.src='audio/ex/'+hash+'.m4a';
-  audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback
+  clearPlaying();
+  playUrls(['audio/ex/'+hash+'.m4a', `https://lod.lu/uploads/examples/AAC/${hash.slice(0,2)}/${hash}.m4a`],
+    ()=>btn&&btn.classList.add('playing'),
+    ()=>clearPlaying());
 }
 // render one LOD example (string or {s,a}) with an inline speaker when a recording exists
 function exItemHTML(item, word){

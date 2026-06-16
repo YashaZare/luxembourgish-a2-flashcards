@@ -149,11 +149,13 @@ input{font:inherit}
 .base-form{font-size:13.5px;color:var(--brand2);font-weight:700}
 .base-form .bf-label{color:var(--muted);font-weight:500}
 .base-form:empty{display:none}
-.say{margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;
-  color:var(--brand2);background:var(--panel2);border:1px solid var(--line);border-radius:999px;
-  padding:8px 16px;min-height:40px;-webkit-tap-highlight-color:transparent}
+/* small round speaker on the card, matching the example-sentence speakers */
+.say{margin-top:10px;display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;padding:0;font-size:14px;line-height:1;
+  color:var(--brand2);background:var(--panel2);border:1px solid var(--line);border-radius:50%;
+  -webkit-tap-highlight-color:transparent}
 .say[hidden]{display:none}
-.say:active{transform:scale(.96)}
+.say:active{transform:scale(.9)}
 .say.playing{color:var(--accent);border-color:#1d5a48;background:#10362c}
 @media (prefers-color-scheme:light){ .say{background:#eef3ff} .say.playing{background:#eafaf4;color:#1aa67e} }
 /* inline example-sentence speaker (next to "e.g." lines) */
@@ -205,16 +207,16 @@ input{font:inherit}
 @keyframes bobL{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(-8px)}}
 @keyframes bobR{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(8px)}}
 
-/* always-present bottom-centre audio button (auto-plays each card, tap to replay) */
-.play-fab{align-self:center;display:flex;align-items:center;justify-content:center;
-  width:58px;height:58px;margin:10px auto 2px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;
+/* always-present audio button — sits inside the bottom bar, same row height as the
+   prev/reshuffle links so it adds no extra height and never pushes the card up */
+.play-fab{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+  width:36px;height:36px;padding:0;border-radius:50%;font-size:17px;line-height:1;cursor:pointer;
   color:#fff;background:linear-gradient(180deg,var(--brand),#3f6fe0);border:none;
-  box-shadow:0 6px 18px rgba(91,140,255,.42);-webkit-tap-highlight-color:transparent;
+  box-shadow:0 3px 10px rgba(91,140,255,.4);-webkit-tap-highlight-color:transparent;
   transition:transform .12s ease, opacity .2s ease, background .2s ease}
-.play-fab:active{transform:scale(.92)}
-.play-fab.off{opacity:.3;pointer-events:none}
-.play-fab.playing{background:linear-gradient(180deg,var(--accent),#1aa67e);animation:fabPulse 1s ease infinite}
-@keyframes fabPulse{0%,100%{box-shadow:0 6px 18px rgba(52,211,166,.45)}50%{box-shadow:0 8px 28px rgba(52,211,166,.9)}}
+.play-fab:active{transform:scale(.9)}
+.play-fab.off{opacity:.28;pointer-events:none}
+.play-fab.playing{background:linear-gradient(180deg,var(--accent),#1aa67e)}
 
 .study-sub{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--muted);font-size:13px}
 
