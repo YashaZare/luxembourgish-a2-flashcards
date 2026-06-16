@@ -271,7 +271,7 @@ function setReveal(v){
   f.querySelector('.back').setAttribute('aria-hidden', !v);
 }
 function reveal(){ setReveal(!state.revealed); }
-function frontFace(){ return document.querySelector('.face.front'); }
+function frontFace(){ return document.querySelector('#flash .face.front'); }
 function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
   const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
 function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open');
@@ -290,7 +290,7 @@ function showAnswerToast(c, verdict){
   el.innerHTML=`<div class="aw">${esc(c.w)}<span class="verdict">${verdict==='got'?'✓ known':'↻ review'}</span></div>`+
     (trs.length?`<div class="at">${esc(trs.join('  ·  '))}</div>`:`<div class="at">— no translation —</div>`);
   void el.offsetWidth; el.classList.add('show');
-  clearTimeout(state.toastT); state.toastT=setTimeout(()=>el.classList.remove('show'), 2700);
+  clearTimeout(state.toastT); state.toastT=setTimeout(()=>el.classList.remove('show'), 8100);
 }
 function grade(verdict){               // 'got' | 'miss'
   if(state.animating) return;
@@ -369,9 +369,15 @@ function wireStudy(){
   // ---- swipe (pointer = touch + mouse) ----
   let dragging=false, x0=0, y0=0, dx=0, moved=false;
   const THRESH=88;
+  // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
+  // hints body must NOT collapse it
+  $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
+
   function down(e){
     if(state.animating) return;
     if(e.target.closest && e.target.closest('a')) return;  // let links (e.g. LOD) work natively
+    // let the open hints scroll/tap freely, and let the toggle handle itself
+    if(e.target.closest && (e.target.closest('.hints') || e.target.closest('#frontHintToggle'))) return;
     if(state.tutorial) stopTutorial();
     dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
     sw.style.transition='none'; sw.classList.add('dragging');
@@ -394,9 +400,14 @@ function wireStudy(){
     if(!moved){                                   // a tap (no drag)
       if(state.revealed){ reveal(); }             // on the answer side: tap flips back
       else {
+        const f=frontFace(), open=f&&f.classList.contains('hints-open');
         const rect=flash.getBoundingClientRect();
-        if(y0 > rect.top + rect.height*0.6){ toggleHints(); }  // bottom of card → hints drawer
-        else { collapseHints(); reveal(); }                    // upper area → reveal the answer
+        const inBottom = y0 > rect.top + rect.height*0.6;
+        if(open){
+          // drawer open: only the toggle/word area act — tapping the body does nothing
+          if(!inBottom){ collapseHints(); reveal(); }   // upper tap → reveal the answer
+        } else if(inBottom){ toggleHints(); }            // bottom tap → open hints
+        else { reveal(); }                               // upper tap → reveal the answer
       }
     }
     sw.style.transition='transform .25s, opacity .25s'; sw.style.transform='';
