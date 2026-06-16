@@ -40,7 +40,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '6';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '7';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
@@ -186,7 +186,6 @@ function render(){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
   setReveal(false); resetSwipe();
-  $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
   // base/dictionary form: the IPA is the lemma's, so when the word is an inflected form show its base
@@ -194,14 +193,10 @@ function render(){
     const label = c.pos==='VRB' ? 'infinitive' : 'base form';
     $('#frontBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(c.lemma)}`;
   } else { $('#frontBase').innerHTML = ''; }
-  // hints drawer: example sentences (context) — shown on tapping the bottom, NOT the answer
-  const exs=(c.ex||[]).slice(0,2);
-  $('#frontHints').innerHTML = exs.length
-    ? exs.map(s=>`<p class="hx"><span class="exl">e.g.</span>${escapeEmph(s,c.w)}</p>`).join('')
-    : `<p class="hnone">no example for this word</p>`;
-  collapseHints();
-  // "marked with the pages it's used in, and where" — pages (in-range first) + location types
-  const r=state.range; const PCAP=12;
+
+  const r=state.range;
+  // pages + types summary (hidden until the hint is opened)
+  const PCAP=12;
   let pages=c.pg.slice();
   if(r){ const inR=pages.filter(p=>p>=r.a&&p<=r.b), out=pages.filter(p=>p<r.a||p>r.b); pages=inR.concat(out); }
   const shown=pages.slice(0,PCAP).map(p=>(r&&p>=r.a&&p<=r.b)?`<b>${p}</b>`:`${p}`);
@@ -211,7 +206,27 @@ function render(){
   const metaHTML =
     `<span class="m-pages">📄 ${c.pg.length} page${c.pg.length>1?'s':''}: ${shown.join(', ')}${moreP}</span>`+
     `<span class="m-types">🏷 ${esc(tShown)}</span>`;
-  $('#frontMeta').innerHTML = metaHTML; $('#backMeta').innerHTML = metaHTML;
+  $('#backMeta').innerHTML = metaHTML;
+
+  // ---- context drawer (revealed on tapping the bottom): the book sentences from the
+  // pages the user is studying, then the LOD example(s) ----
+  const lesson = relevantLesson(c);
+  let h = lesson ? `<div class="h-sec">📍 ${esc(lesson)}</div>` : '';
+  const bs = c.bs || [];
+  const inRange = r ? bs.filter(o=>o.p>=r.a && o.p<=r.b) : bs;
+  const bookList = (inRange.length?inRange:bs).slice(0,5);
+  if(bookList.length){
+    h += `<div class="h-grp">${r&&inRange.length?`used on your pages (${r.a}–${r.b})`:'used in the book'}</div>`;
+    h += bookList.map(o=>`<p class="hx"><span class="pg">p.${o.p}</span> ${escapeEmph(o.s,c.w)}</p>`).join('');
+  }
+  const exs=(c.ex||[]).slice(0,2);
+  if(exs.length){
+    h += `<div class="h-grp">dictionary example</div>`;
+    h += exs.map(s=>`<p class="hx"><span class="exl">e.g.</span> ${escapeEmph(s,c.w)}</p>`).join('');
+  }
+  h += `<div class="h-meta">${metaHTML}</div>`;
+  $('#frontHints').innerHTML = h || `<p class="hnone">no extra context</p>`;
+  collapseHints();
   // back
   $('#backPos').textContent = c.pos||'';
   const langs=[...state.selLangs].filter(l=>d.langs.includes(l));
@@ -238,9 +253,8 @@ function render(){
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
-  const inRangeN = r? c.pg.filter(p=>p>=r.a&&p<=r.b).length : c.pg.length;
-  $('#deckMeta').textContent = r && inRangeN>1 ? `${inRangeN}× in pp.${r.a}–${r.b} · ${c.f}× in book`
-                                              : `${c.f}× in book`;
+  // page/usage info stays hidden on the question side — it's inside the context drawer
+  $('#deckMeta').textContent = '';
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
 }
@@ -253,9 +267,9 @@ function setReveal(v){
 function reveal(){ setReveal(!state.revealed); }
 function frontFace(){ return document.querySelector('.face.front'); }
 function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
-  const t=$('#frontHintToggle'); if(t) t.textContent='tap here for a hint ▾'; }
+  const t=$('#frontHintToggle'); if(t) t.textContent='tap here for context ▾'; }
 function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open');
-  const t=$('#frontHintToggle'); if(t) t.textContent= open?'tap to hide ▴':'tap here for a hint ▾'; }
+  const t=$('#frontHintToggle'); if(t) t.textContent= open?'tap to hide ▴':'tap here for context ▾'; }
 function resetSwipe(){
   const sw=$('#swipe'); if(!sw) return;
   sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='';
