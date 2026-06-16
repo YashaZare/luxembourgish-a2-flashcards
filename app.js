@@ -482,6 +482,8 @@ function wireStudy(){
   });
   if($('#reverseToggle')) $('#reverseToggle').onchange = ()=>{
     state.reverse = $('#reverseToggle').checked;
+    if(state.reverse && state.audioMode===2){ state.audioMode = 1; }   // listening-first doesn't apply in reverse
+    if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;
     persist(); syncPlayFab(); render();   // re-render the current card in the new direction
   };
   if($('#setReshuffle')) $('#setReshuffle').onclick = ()=>{
@@ -905,7 +907,13 @@ function syncPlayFab(){   // keeps its name; now reflects mode + direction in th
     study.classList.toggle('reverse-mode', !!state.reverse);
     study.classList.toggle('listen-mode', m===2 && !state.reverse);   // listening-first needs the LB front
   }
-  $$('#audioSeg button').forEach(b=>b.classList.toggle('on', +b.dataset.mode===m));
+  $$('#audioSeg button').forEach(b=>{
+    const mode=+b.dataset.mode;
+    b.classList.toggle('on', mode===m);
+    const dis = !!state.reverse && mode===2;   // listening-first makes no sense in reverse → grey out
+    b.classList.toggle('disabled', dis);
+    b.disabled = dis;
+  });
   const hint=$('#audioHint'); if(hint) hint.textContent = AUDIO_MODES[m].hint;
   if($('#reverseToggle')) $('#reverseToggle').checked = !!state.reverse;
 }
