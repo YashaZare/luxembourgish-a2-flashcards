@@ -297,10 +297,12 @@ function confFromY(y){
   if(f>=0.3)  return {f, grade:3, label:'GOOD', cls:'good', color:'#7bd88f'};
   return            {f, grade:2, label:'HARD', cls:'hard', color:'var(--gold)'};
 }
-function showConfLine(on, cg){
+function showConfLine(on, cg, t){
   const line=$('#confLine'); if(!line) return;
-  if(!on){ line.classList.remove('show'); return; }
+  if(!on){ line.classList.remove('show'); line.style.opacity=''; return; }
   line.classList.add('show');
+  // opacity follows how far the card has been dragged → grows in gradually, never pops
+  line.style.opacity = Math.min(Math.max(t==null?1:t*1.15,0),1);
   const dot=$('#confDot'), lab=$('#confLabel'), top=((1-cg.f)*100)+'%';
   if(dot){ dot.style.top=top; dot.className='conf-dot '+cg.cls; }
   if(lab){ lab.style.top=top; lab.className='conf-label '+cg.cls; lab.textContent=cg.label; }
@@ -422,9 +424,12 @@ function wireStudy(){
 
   // ---- swipe (pointer = touch + mouse) ----
   let dragging=false, deciding=false, axis=null, x0=0, y0=0, dx=0, dy=0, lastY=0, startedInHints=false;
-  const THRESH=88, VTHRESH=78;
+  const THRESH=88, VTHRESH=78, SWITCH_MARGIN=16;   // hysteresis for changing swipe direction
   function resetStamp(){ const s=$('#stampGot'); s.style.opacity=0; s.className='stamp got'; s.textContent='KNOW IT ✓';
     $('#stampMiss').style.opacity=0; }
+  // wipe a swipe's visuals when the user switches direction mid-gesture
+  function clearDragVisuals(){ sw.style.transform=''; tint.style.opacity=0; showConfLine(false);
+    $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0; }
   // the hint toggle is the only thing that hides the drawer; tapping/scrolling the
   // hints body must NOT collapse it
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
@@ -469,8 +474,18 @@ function wireStudy(){
       else { axis='y'; deciding=false; return; }                        // down / in-tips → native scroll
     }
     if(!dragging) return;
+    // trust the user: once we've captured the pointer, let them change their mind between a
+    // horizontal swipe and an upward "perfect" — switch whenever the other direction clearly
+    // dominates (a margin of hysteresis keeps it from flickering at the diagonal).
+    if(axis==='x' || axis==='up'){
+      const ax=Math.abs(ddx), ay=Math.abs(ddy);
+      let want=axis;
+      if(ax > ay + SWITCH_MARGIN) want='x';
+      else if(ay > ax + SWITCH_MARGIN && ddy<0 && !startedInHints) want='up';
+      if(want!==axis){ axis=want; clearDragVisuals(); }
+    }
     if(axis==='up'){                          // swipe up = perfect / Easy (push far out)
-      dy=Math.min(ddy,0);
+      dx=0; dy=Math.min(ddy,0);
       const t=Math.min(-dy/VTHRESH,1);
       sw.style.transform=`translateY(${dy}px) scale(${1-t*0.05})`;
       tint.style.background='var(--accent)'; tint.style.opacity=t*0.30;
@@ -478,12 +493,12 @@ function wireStudy(){
       $('#stampMiss').style.opacity=0; showConfLine(false);
       return;
     }
-    dx=ddx;                                   // horizontal
+    dy=0; dx=ddx;                             // horizontal
     sw.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`;
     const t=Math.min(Math.abs(dx)/THRESH,1);
     if(dx>0){                                 // RIGHT → confidence set by vertical drop position
       const cg=confFromY(lastY);
-      showConfLine(true, cg);
+      showConfLine(true, cg, t);              // fade the gauge in with the drag, no pop
       tint.style.background=cg.color; tint.style.opacity=t*0.30;
       const s=$('#stampGot'); s.textContent=cg.label+' ✓'; s.className='stamp got '+cg.cls; s.style.opacity=t;
       $('#stampMiss').style.opacity=0;
