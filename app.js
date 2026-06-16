@@ -758,7 +758,7 @@ function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFra
   const bar=$('#gameBar'); if(bar) bar.style.width='0%'; SFX.lose(); showGameResult(false, g.matched); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
-  el.innerHTML = `<div class="gr-card"><div class="gr-emoji">${won?'🎉':'⏱️'}</div>`+
+  el.innerHTML = `<div class="gr-card"><div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
     `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
@@ -824,7 +824,7 @@ function renderMonSummary(P){
       `<div class="ms-stat"><b class="known">${b.known}</b><span>known</span></div>`+
       `<div class="ms-stat"><b class="due">${b.due}</b><span>due</span></div>`+
       `<div class="ms-stat"><b class="strug">${b.struggling}</b><span>struggling</span></div>`+
-      `<div class="ms-stat"><b class="streak">${streak}🔥</b><span>day streak</span></div>`+
+      `<div class="ms-stat"><b class="streak">${streak} <i class="ic ic-streak"></i></b><span>day streak</span></div>`+
     `</div>`;
 }
 function renderMonLegend(){

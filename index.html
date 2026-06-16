@@ -9,10 +9,11 @@
 <meta name="apple-mobile-web-app-title" content="Lëtzebuergesch">
 <meta name="description" content="Flashcards for Schwätzt Dir Lëtzebuergesch? A2 — learn the vocabulary from the book.">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/light/brand-app.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
 <script>try{var _s=JSON.parse(localStorage.getItem('lux-fc-settings')||'{}');document.documentElement.setAttribute('data-theme',_s.theme||'clay');}catch(e){document.documentElement.setAttribute('data-theme','clay');}</script>
-<link rel="stylesheet" href="styles.css?v=46">
+<link rel="stylesheet" href="styles.css?v=47">
 </head>
 <body>
 <div id="app">
@@ -27,21 +28,21 @@
     <div class="mem-bar" id="memBar" hidden>
       <div class="mem-stats" id="memStats"></div>
       <div class="mem-actions">
-        <button class="mem-review" id="reviewDueBtn" type="button" hidden>🔁 Review <b id="dueCount">0</b> due</button>
+        <button class="mem-review" id="reviewDueBtn" type="button" hidden><i class="ic ic-due"></i> Review <b id="dueCount">0</b> due</button>
         <button class="mem-progress" id="progressBtn" type="button">📊 Progress</button>
       </div>
     </div>
 
     <div class="card-panel">
       <div class="field">
-        <div class="field-label"><span>🎨 Theme</span></div>
+        <div class="field-label"><i class="ic ic-theme"></i><span>Theme</span></div>
         <div class="theme-opts">
           <button class="theme-opt" data-theme="clay" type="button"><span class="tp-swatch clay"></span>Soft Clay</button>
           <button class="theme-opt" data-theme="tactile" type="button"><span class="tp-swatch tactile"></span>Tactile Dark</button>
         </div>
       </div>
       <div class="field">
-        <div class="field-label"><span>📖 Pages</span><span class="hint" id="pageHint"></span></div>
+        <div class="field-label"><i class="ic ic-pages"></i><span>Pages</span><span class="hint" id="pageHint"></span></div>
         <div class="range-row">
           <label>From <input type="number" id="pageFrom" inputmode="numeric"></label>
           <label>To <input type="number" id="pageTo" inputmode="numeric"></label>
@@ -53,7 +54,7 @@
       </div>
 
       <div class="field">
-        <div class="field-label"><span>🏷️ Word types</span>
+        <div class="field-label"><i class="ic ic-word-types"></i><span>Word types</span>
           <button class="link-btn" id="typeAll">all</button><button class="link-btn" id="typeNone">none</button>
         </div>
         <div class="chips" id="typeGroups"></div>
@@ -63,16 +64,16 @@
       </div>
 
       <div class="field">
-        <div class="field-label"><span>🌍 Answer language(s)</span><span class="hint">back of card</span></div>
+        <div class="field-label"><i class="ic ic-languages"></i><span>Answer language(s)</span><span class="hint">back of card</span></div>
         <div class="chips" id="langChips"></div>
       </div>
 
       <div class="field">
-        <div class="field-label"><span>⚙️ Options</span></div>
+        <div class="field-label"><i class="ic ic-options"></i><span>Options</span></div>
         <div class="toggles">
           <label class="switch">Only words with a translation<input type="checkbox" id="onlyTranslated" checked><span></span></label>
           <label class="switch">Shuffle deck<input type="checkbox" id="shuffle" checked><span></span></label>
-          <label class="switch">🔊 Auto-play pronunciation<input type="checkbox" id="autoPlay" checked><span></span></label>
+          <label class="switch"><i class="ic ic-audio-auto-play"></i> Auto-play pronunciation<input type="checkbox" id="autoPlay" checked><span></span></label>
         </div>
       </div>
     </div>
@@ -97,7 +98,7 @@
   <!-- STUDY SCREEN -->
   <section id="study" class="screen hidden">
     <header class="study-head">
-      <button class="icon-btn" id="backBtn" aria-label="Back to setup">‹</button>
+      <button class="icon-btn" id="backBtn" aria-label="Back to setup"><i class="ic ic-back-previous"></i></button>
       <div class="progress" aria-hidden="true"><div class="bar" id="progBar"></div></div>
       <div class="counter" id="counter" aria-live="polite">0/0</div>
     </header>
@@ -106,7 +107,7 @@
          Collapses when the context drawer opens so the card can grow up into its space. -->
     <div class="top-row" id="topRow">
       <button class="last-word" id="lastWord" type="button" aria-label="Go to previous word"></button>
-      <button class="top-box" id="settingsBtn" type="button" aria-label="Settings">⚙️</button>
+      <button class="top-box" id="settingsBtn" type="button" aria-label="Settings"><i class="ic ic-settings"></i></button>
     </div>
 
     <div class="flash-wrap" id="flashWrap">
@@ -128,7 +129,7 @@
               <div class="ipa" id="peekIpa"></div>
               <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊</button>
               <div class="base-form" id="peekBase"></div>
-              <div class="listen-cue static" aria-hidden="true">🎧</div>
+              <div class="listen-cue static" aria-hidden="true"><i class="ic ic-audio-listening-first"></i></div>
               <div class="front-meaning" id="peekMeaning" aria-hidden="true"></div>
             </div>
             <div class="face-foot"><div class="tap-hint">tap here for context ▾</div></div>
@@ -147,7 +148,7 @@
               <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
               <div class="base-form" id="frontBase"></div>
               <!-- listening-first: replaces the word; tap to (re)play, then tap the card to reveal -->
-              <button class="listen-cue" id="listenCue" type="button" aria-label="Play pronunciation">🎧<span class="lc-t">tap to hear · then tap card to reveal</span></button>
+              <button class="listen-cue" id="listenCue" type="button" aria-label="Play pronunciation"><i class="ic ic-audio-listening-first"></i><span class="lc-t">tap to hear · then tap card to reveal</span></button>
               <!-- reverse direction: the meaning is the prompt here -->
               <div class="front-meaning" id="frontMeaning"></div>
             </div>
@@ -188,9 +189,9 @@
       <div class="set-block">
         <div class="set-label">Audio</div>
         <div class="seg3" id="audioSeg">
-          <button type="button" data-mode="0">🔇<span>Off</span></button>
-          <button type="button" data-mode="1">🔊<span>Auto</span></button>
-          <button type="button" data-mode="2">🎧<span>Listen</span></button>
+          <button type="button" data-mode="0"><i class="ic ic-audio-silent"></i><span>Off</span></button>
+          <button type="button" data-mode="1"><i class="ic ic-audio-auto-play"></i><span>Auto</span></button>
+          <button type="button" data-mode="2"><i class="ic ic-audio-listening-first"></i><span>Listen</span></button>
         </div>
         <div class="set-hint" id="audioHint"></div>
       </div>
@@ -198,7 +199,7 @@
         <div class="set-label">Direction</div>
         <label class="switch set-switch"><span class="sw-label">Reverse direction<small>meaning → Lëtzebuergesch (production)</small></span><input type="checkbox" id="reverseToggle"><span></span></label>
       </div>
-      <button class="menu-item" id="setReshuffle">🔀 Reshuffle deck</button>
+      <button class="menu-item" id="setReshuffle"><i class="ic ic-reshuffle"></i> Reshuffle deck</button>
       <div class="menu-foot">More settings coming soon</div>
     </div>
   </section>
@@ -206,17 +207,17 @@
   <!-- MODE CHOOSER (after Start learning) -->
   <section id="choose" class="screen hidden">
     <header class="study-head">
-      <button class="icon-btn" id="chooseBack" aria-label="Back to setup">‹</button>
+      <button class="icon-btn" id="chooseBack" aria-label="Back to setup"><i class="ic ic-back-previous"></i></button>
       <h2 class="choose-h">How do you want to study?</h2>
     </header>
     <div class="choose-wrap">
       <button class="mode-card" id="modeFlash" type="button">
-        <span class="mc-emoji">📇</span>
+        <i class="mc-emoji ic ic-flashcards"></i>
         <span class="mc-title">Flashcards</span>
         <span class="mc-sub">Swipe through the deck at your own pace</span>
       </button>
       <div class="mode-card game">
-        <span class="mc-emoji">🎮</span>
+        <i class="mc-emoji ic ic-match-game"></i>
         <span class="mc-title">Match game</span>
         <span class="mc-sub">Pair words to meanings, against the clock</span>
         <div class="game-count">
@@ -232,7 +233,7 @@
   <!-- MATCH GAME -->
   <section id="game" class="screen hidden">
     <div class="game-top">
-      <button class="icon-btn" id="gameBack" aria-label="Quit game">‹</button>
+      <button class="icon-btn" id="gameBack" aria-label="Quit game"><i class="ic ic-back-previous"></i></button>
       <div class="progress game-bar-wrap"><div class="bar" id="gameBar"></div></div>
     </div>
     <div class="game-grid" id="gameGrid"></div>
@@ -256,7 +257,7 @@
   <!-- PROGRESS / HEATMAP SCREEN -->
   <section id="monitor" class="screen hidden">
     <header class="mon-head">
-      <button class="icon-btn" id="monBack" aria-label="Back to setup">‹</button>
+      <button class="icon-btn" id="monBack" aria-label="Back to setup"><i class="ic ic-back-previous"></i></button>
       <h2>Progress</h2>
       <button class="icon-btn" id="monMenuBtn" aria-label="Options">⋯</button>
     </header>
@@ -280,8 +281,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=46"></script>
-<script src="progress.js?v=46"></script>
-<script src="app.js?v=46"></script>
+<script src="srs.js?v=47"></script>
+<script src="progress.js?v=47"></script>
+<script src="app.js?v=47"></script>
 </body>
 </html>

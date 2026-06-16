@@ -51,7 +51,7 @@ input{font:inherit}
 .card-panel{background:none;border:none;padding:0;display:flex;flex-direction:column;gap:12px}
 .field{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:15px 16px;box-shadow:var(--sh-sm)}
 .field-label{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;margin-bottom:13px;letter-spacing:-.2px;color:var(--ink)}
-.field-label > span:first-child{flex:1;min-width:0}
+.field-label > span:nth-of-type(1){flex:1;min-width:0}
 .field-label .hint{flex:none;font-weight:600;color:var(--muted);font-size:12px}
 .link-btn{color:var(--brand2);font-size:12px;font-weight:800;padding:6px 11px;border-radius:10px;background:var(--panel2);min-height:0;line-height:1}
 .link-btn:active{transform:scale(.95)}
@@ -622,3 +622,67 @@ input{font:inherit}
 /* readable answer translation on the dark card (clay uses a dark green, illegible on dark) */
 [data-theme="tactile"] .answer .tr{color:#a9e2c8}
 [data-theme="tactile"] .edge-hint.right{color:#4fc79a}   /* "know it ✓" stays green, not brand-orange */
+
+/* ============================ ICON SYSTEM ============================
+   <i class="ic ic-NAME"></i> — theme-aware two-colour SVG icons.   */
+.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.18em;flex:none;background:no-repeat center/contain}
+.icon-btn .ic{width:26px;height:26px}
+.top-box .ic{width:24px;height:24px}
+.seg3 button .ic{width:24px;height:24px;margin-bottom:1px}
+.seg3 button.on .ic{filter:brightness(0) invert(1)}      /* white on the coloured "on" fill */
+.mc-emoji.ic{width:44px;height:44px;display:block;margin:0 auto}
+.gr-emoji.ic{width:50px;height:50px;display:inline-block}
+.listen-cue .ic{width:46px;height:46px;filter:brightness(0) invert(1)}
+.listen-cue.static .ic{opacity:.8}
+.mem-review .ic,.mem-progress .ic{width:1.05em;height:1.05em}
+.field-label .ic{width:18px;height:18px}
+.lw-tag .ic,.set-label .ic{width:1em;height:1em}
+.ic-arrow-down-no-idea{background-image:url(icons/light/arrow-down-no-idea.svg)}
+[data-theme="tactile"] .ic-arrow-down-no-idea{background-image:url(icons/dark/arrow-down-no-idea.svg)}
+.ic-arrow-left-dont-know{background-image:url(icons/light/arrow-left-dont-know.svg)}
+[data-theme="tactile"] .ic-arrow-left-dont-know{background-image:url(icons/dark/arrow-left-dont-know.svg)}
+.ic-arrow-right-know{background-image:url(icons/light/arrow-right-know.svg)}
+[data-theme="tactile"] .ic-arrow-right-know{background-image:url(icons/dark/arrow-right-know.svg)}
+.ic-arrow-up-perfect{background-image:url(icons/light/arrow-up-perfect.svg)}
+[data-theme="tactile"] .ic-arrow-up-perfect{background-image:url(icons/dark/arrow-up-perfect.svg)}
+.ic-audio-auto-play{background-image:url(icons/light/audio-auto-play.svg)}
+[data-theme="tactile"] .ic-audio-auto-play{background-image:url(icons/dark/audio-auto-play.svg)}
+.ic-audio-listening-first{background-image:url(icons/light/audio-listening-first.svg)}
+[data-theme="tactile"] .ic-audio-listening-first{background-image:url(icons/dark/audio-listening-first.svg)}
+.ic-audio-silent{background-image:url(icons/light/audio-silent.svg)}
+[data-theme="tactile"] .ic-audio-silent{background-image:url(icons/dark/audio-silent.svg)}
+.ic-back-previous{background-image:url(icons/light/back-previous.svg)}
+[data-theme="tactile"] .ic-back-previous{background-image:url(icons/dark/back-previous.svg)}
+.ic-brand-app{background-image:url(icons/light/brand-app.svg)}
+[data-theme="tactile"] .ic-brand-app{background-image:url(icons/dark/brand-app.svg)}
+.ic-due{background-image:url(icons/light/due.svg)}
+[data-theme="tactile"] .ic-due{background-image:url(icons/dark/due.svg)}
+.ic-flashcards{background-image:url(icons/light/flashcards.svg)}
+[data-theme="tactile"] .ic-flashcards{background-image:url(icons/dark/flashcards.svg)}
+.ic-known{background-image:url(icons/light/known.svg)}
+[data-theme="tactile"] .ic-known{background-image:url(icons/dark/known.svg)}
+.ic-languages{background-image:url(icons/light/languages.svg)}
+[data-theme="tactile"] .ic-languages{background-image:url(icons/dark/languages.svg)}
+.ic-match-game{background-image:url(icons/light/match-game.svg)}
+[data-theme="tactile"] .ic-match-game{background-image:url(icons/dark/match-game.svg)}
+.ic-options{background-image:url(icons/light/options.svg)}
+[data-theme="tactile"] .ic-options{background-image:url(icons/dark/options.svg)}
+.ic-pages{background-image:url(icons/light/pages.svg)}
+[data-theme="tactile"] .ic-pages{background-image:url(icons/dark/pages.svg)}
+.ic-reshuffle{background-image:url(icons/light/reshuffle.svg)}
+[data-theme="tactile"] .ic-reshuffle{background-image:url(icons/dark/reshuffle.svg)}
+.ic-settings{background-image:url(icons/light/settings.svg)}
+[data-theme="tactile"] .ic-settings{background-image:url(icons/dark/settings.svg)}
+.ic-streak{background-image:url(icons/light/streak.svg)}
+[data-theme="tactile"] .ic-streak{background-image:url(icons/dark/streak.svg)}
+.ic-struggling{background-image:url(icons/light/struggling.svg)}
+[data-theme="tactile"] .ic-struggling{background-image:url(icons/dark/struggling.svg)}
+.ic-theme{background-image:url(icons/light/theme.svg)}
+[data-theme="tactile"] .ic-theme{background-image:url(icons/dark/theme.svg)}
+.ic-times-up{background-image:url(icons/light/times-up.svg)}
+[data-theme="tactile"] .ic-times-up{background-image:url(icons/dark/times-up.svg)}
+.ic-win-solved{background-image:url(icons/light/win-solved.svg)}
+[data-theme="tactile"] .ic-win-solved{background-image:url(icons/dark/win-solved.svg)}
+.ic-word-types{background-image:url(icons/light/word-types.svg)}
+[data-theme="tactile"] .ic-word-types{background-image:url(icons/dark/word-types.svg)}
+.ms-stat .ic{width:16px;height:16px;vertical-align:-2px}
