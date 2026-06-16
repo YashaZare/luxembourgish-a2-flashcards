@@ -198,6 +198,8 @@ function render(skipPeek){
   } else { $('#frontBase').innerHTML = ''; }
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
+  // bottom-centre audio button is always in place; dim + disable it when the card has no audio
+  const fab=$('#playFab'); if(fab){ fab.classList.toggle('off',!hasAudio); fab.disabled=!hasAudio; }
   // auto-play the word's pronunciation when a new card appears (if the user enabled it).
   // The deck is only reached via a tap/swipe gesture, so playback is already unlocked.
   if(hasAudio && state.autoplay) playAudio(c);
@@ -330,6 +332,9 @@ function updatePeek(card){
   p.style.visibility='';
   $('#peekWord').textContent = card.w;
   $('#peekIpa').textContent = card.ip?`/${card.ip}/`:'';
+  // mirror the listen button on the card behind so the layout doesn't shift when it
+  // rises to the front (it's non-interactive here — purely for structural match)
+  if($('#peekSay')) $('#peekSay').hidden = !audioId(card);
   if(card.lemma){ const label=card.pos==='VRB'?'infinitive':'base form';
     $('#peekBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(card.lemma)}`; }
   else $('#peekBase').innerHTML = '';
@@ -388,6 +393,7 @@ function wireStudy(){
   $('#frontHintToggle').onclick = (e)=>{ e.stopPropagation(); if(state.tutorial) stopTutorial(); toggleHints(); };
   $('#frontSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   $('#backSay').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
+  if($('#playFab')) $('#playFab').onclick = (e)=>{ e.stopPropagation(); playAudio(state.deck[state.idx]); };
   // example-sentence speakers are rendered into card HTML each turn → delegate
   flash.addEventListener('click', (e)=>{
     const b=e.target.closest && e.target.closest('.exsay');
@@ -480,8 +486,9 @@ function playAudio(card){
   let fellBack=false;
   audioEl.onerror = ()=>{ if(fellBack) return; fellBack=true;   // local missing → stream from LOD
     audioEl.src='https://lod.lu/uploads/AAC/'+id+'.m4a'; audioEl.play().catch(()=>{}); };
-  audioEl.onplaying = ()=>$$('.say').forEach(b=>b.classList.add('playing'));
-  audioEl.onended = audioEl.onpause = ()=>$$('.say').forEach(b=>b.classList.remove('playing'));
+  audioEl.onplaying = ()=>$$('.say,.play-fab').forEach(b=>b.classList.add('playing'));
+  audioEl.onended = audioEl.onpause = ()=>$$('.say,.play-fab').forEach(b=>b.classList.remove('playing'));
+  $$('.exsay.playing').forEach(b=>b.classList.remove('playing'));   // a word play cancels any example
   try{ audioEl.pause(); audioEl.currentTime=0; }catch(e){}
   audioEl.src='audio/'+id+'.m4a';
   audioEl.play().catch(()=>{});   // failure triggers onerror → LOD fallback

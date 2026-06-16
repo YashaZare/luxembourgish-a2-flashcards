@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
 <div id="app">
@@ -53,7 +53,7 @@
       <div class="field toggles">
         <label class="switch"><input type="checkbox" id="onlyTranslated" checked><span></span> Only words with a translation</label>
         <label class="switch"><input type="checkbox" id="shuffle" checked><span></span> Shuffle deck</label>
-        <label class="switch"><input type="checkbox" id="autoPlay"><span></span> 🔊 Auto-play pronunciation</label>
+        <label class="switch"><input type="checkbox" id="autoPlay" checked><span></span> 🔊 Auto-play pronunciation</label>
       </div>
     </div>
 
@@ -92,6 +92,7 @@
             <div class="face-mid">
               <div class="word" id="peekWord"></div>
               <div class="ipa" id="peekIpa"></div>
+              <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊 listen</button>
               <div class="base-form" id="peekBase"></div>
             </div>
             <div class="face-foot"><div class="tap-hint">tap here for context ▾</div></div>
@@ -141,6 +142,9 @@
     <!-- answer reveal after a swipe -->
     <div class="ans-toast" id="ansToast" aria-live="polite"></div>
 
+    <!-- always-present audio control; auto-plays each new card, tap to replay -->
+    <button class="play-fab" id="playFab" type="button" aria-label="Play pronunciation">🔊</button>
+
     <div class="study-sub">
       <button class="link-btn" id="prevBtn">‹ prev</button>
       <span id="deckMeta"></span>
@@ -164,6 +168,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=21"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>

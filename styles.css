@@ -205,6 +205,17 @@ input{font:inherit}
 @keyframes bobL{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(-8px)}}
 @keyframes bobR{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(8px)}}
 
+/* always-present bottom-centre audio button (auto-plays each card, tap to replay) */
+.play-fab{align-self:center;display:flex;align-items:center;justify-content:center;
+  width:58px;height:58px;margin:10px auto 2px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;
+  color:#fff;background:linear-gradient(180deg,var(--brand),#3f6fe0);border:none;
+  box-shadow:0 6px 18px rgba(91,140,255,.42);-webkit-tap-highlight-color:transparent;
+  transition:transform .12s ease, opacity .2s ease, background .2s ease}
+.play-fab:active{transform:scale(.92)}
+.play-fab.off{opacity:.3;pointer-events:none}
+.play-fab.playing{background:linear-gradient(180deg,var(--accent),#1aa67e);animation:fabPulse 1s ease infinite}
+@keyframes fabPulse{0%,100%{box-shadow:0 6px 18px rgba(52,211,166,.45)}50%{box-shadow:0 8px 28px rgba(52,211,166,.9)}}
+
 .study-sub{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--muted);font-size:13px}
 
 /* ---------- done ---------- */
