@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 <div id="app">
@@ -94,10 +94,10 @@
             <div class="face-mid">
               <div class="word" id="frontWord"></div>
               <div class="ipa" id="frontIpa"></div>
-              <div class="ctx" id="frontCtx"></div>
             </div>
+            <div class="hints" id="frontHints"></div>
             <div class="face-foot">
-              <div class="tap-hint">tap for example · swipe to grade</div>
+              <div class="tap-hint" id="frontHintToggle">tap here for a hint ▾</div>
               <div class="meta footnote" id="frontMeta"></div>
             </div>
           </div>
@@ -148,6 +148,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

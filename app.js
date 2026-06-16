@@ -189,7 +189,12 @@ function render(){
   $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
-  $('#frontCtx').innerHTML = '';  // front shows word + IPA only; example lives on the revealed side
+  // hints drawer: example sentences (context) — shown on tapping the bottom, NOT the answer
+  const exs=(c.ex||[]).slice(0,2);
+  $('#frontHints').innerHTML = exs.length
+    ? exs.map(s=>`<p class="hx"><span class="exl">e.g.</span>${escapeEmph(s,c.w)}</p>`).join('')
+    : `<p class="hnone">no example for this word</p>`;
+  collapseHints();
   // "marked with the pages it's used in, and where" — pages (in-range first) + location types
   const r=state.range; const PCAP=12;
   let pages=c.pg.slice();
@@ -241,6 +246,11 @@ function setReveal(v){
   f.querySelector('.back').setAttribute('aria-hidden', !v);
 }
 function reveal(){ setReveal(!state.revealed); }
+function frontFace(){ return document.querySelector('.face.front'); }
+function collapseHints(){ const f=frontFace(); if(f) f.classList.remove('hints-open');
+  const t=$('#frontHintToggle'); if(t) t.textContent='tap here for a hint ▾'; }
+function toggleHints(){ const f=frontFace(); if(!f) return; const open=f.classList.toggle('hints-open');
+  const t=$('#frontHintToggle'); if(t) t.textContent= open?'tap to hide ▴':'tap here for a hint ▾'; }
 function resetSwipe(){
   const sw=$('#swipe'); if(!sw) return;
   sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='';
@@ -347,7 +357,14 @@ function wireStudy(){
   function up(){
     if(!dragging) return; dragging=false; sw.classList.remove('dragging');
     if(Math.abs(dx)>=THRESH){ grade(dx>0?'got':'miss'); return; }
-    if(!moved){ reveal(); }                       // a tap reveals the answer
+    if(!moved){                                   // a tap (no drag)
+      if(state.revealed){ reveal(); }             // on the answer side: tap flips back
+      else {
+        const rect=flash.getBoundingClientRect();
+        if(y0 > rect.top + rect.height*0.6){ toggleHints(); }  // bottom of card → hints drawer
+        else { collapseHints(); reveal(); }                    // upper area → reveal the answer
+      }
+    }
     sw.style.transition='transform .25s, opacity .25s'; sw.style.transform='';
     tint.style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
   }
@@ -364,6 +381,7 @@ function wireStudy(){
     if(e.key===' '||e.key==='Enter'){ e.preventDefault(); reveal(); }
     else if(e.key==='ArrowRight') grade('got');
     else if(e.key==='ArrowLeft')  grade('miss');
+    else if(e.key==='ArrowDown'){ e.preventDefault(); toggleHints(); }
     else if(e.key==='1') grade('miss');
     else if(e.key==='2') grade('got');
   });

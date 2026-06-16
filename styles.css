@@ -101,8 +101,18 @@ input{font:inherit}
 .face.back{background:linear-gradient(165deg,#16324f,#10283f);opacity:0;pointer-events:none}
 .flash.revealed .face.front{opacity:0;pointer-events:none}
 .flash.revealed .face.back{opacity:1;pointer-events:auto}
-.face-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden;padding-top:24px}
+.face-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden;padding-top:24px;transition:flex-grow .38s,padding-top .38s}
 .face-foot{flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%}
+/* expandable hints drawer (glides up on tapping the bottom of the card) */
+.hints{flex:none;max-height:0;opacity:0;overflow:hidden;width:100%;padding:0 6px;
+  color:var(--muted);font-size:14.5px;line-height:1.55;text-align:center;
+  transition:max-height .4s cubic-bezier(.2,.85,.25,1),opacity .3s,margin .4s}
+.front.hints-open .hints{max-height:46%;opacity:1;margin-bottom:8px;overflow-y:auto}
+.front.hints-open .face-mid{justify-content:flex-start;padding-top:30px}
+.hints .hx{margin:0 0 10px;max-width:96%;margin-left:auto;margin-right:auto}
+.hints .hx .exl{color:var(--accent);font-style:italic;margin-right:4px}
+.hints .hx b{color:var(--ink);font-weight:700}
+.hints .hnone{color:#ffffff66;font-style:italic;font-size:13px}
 
 .lesson-tag{position:absolute;top:16px;left:0;right:0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.3px}
 .word{font-size:clamp(36px,9.5vw,56px);font-weight:800;letter-spacing:-.5px;line-height:1.1;word-break:break-word;margin-top:6px}
@@ -185,4 +195,5 @@ input{font:inherit}
   .homo .hg{color:#2f54b0}
   .meta.footnote span{color:#13203a66}
   .meta.footnote .m-types{color:#3f63c0;opacity:.85}
+  .hints .hnone{color:#13203a55}
 }
