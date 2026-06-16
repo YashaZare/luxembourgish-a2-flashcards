@@ -411,6 +411,11 @@ function updatePeek(card){
   if(card.lemma){ const label=card.pos==='VRB'?'infinitive':'base form';
     $('#peekBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(card.lemma)}`; }
   else $('#peekBase').innerHTML = '';
+  // reverse mode: the card behind must already show the meaning, so the swap is seamless
+  if($('#peekMeaning')){
+    const langs=[...state.selLangs].filter(l=>state.data.langs.includes(l));
+    $('#peekMeaning').innerHTML = `<div class="fm-q">→ in Lëtzebuergesch?</div>` + answerLinesHTML(card, langs, true);
+  }
 }
 function next(){ if(state.idx<state.deck.length-1){state.idx++;render();} else done(); }
 function prev(){ if(state.idx>0){state.idx--;render();} }

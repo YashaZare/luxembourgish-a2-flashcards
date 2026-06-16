@@ -449,8 +449,9 @@ input{font:inherit}
 #study.reverse-mode .peek .face.front .ipa,
 #study.reverse-mode .peek .face.front .base-form,
 #study.reverse-mode .peek .face.front .say{display:none}
-#study.reverse-mode .swipe .face.front .front-meaning{display:flex}
-#study.reverse-mode .peek .face.front .listen-cue.static{display:inline-flex}
+#study.reverse-mode .swipe .face.front .front-meaning,
+#study.reverse-mode .peek .face.front .front-meaning{display:flex}
+#study.reverse-mode .peek .face.front .listen-cue.static{display:none}   /* never the 🎧 cue in reverse */
 #study.reverse-mode .face.back .bw{display:block}
 #study.reverse-mode #frontHintToggle{visibility:hidden;pointer-events:none}   /* context would spoil */
 /* reverse toggle row in the settings sheet */
