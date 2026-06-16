@@ -1,0 +1,15 @@
+.wrangler
+.wrangler/**
+wrangler.jsonc
+.assetsignore
+build_app_data.py
+deploy.sh
+bugsweep.workflow.js
+*.workflow.js
+README.md
+.gitignore
+.git
+.git/**
+__pycache__
+.DS_Store
+node_modules
