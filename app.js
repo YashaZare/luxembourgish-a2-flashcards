@@ -470,14 +470,18 @@ function wireStudy(){
 
   function down(e){
     if(state.animating) return;
-    // interactive bits handle themselves — never start a swipe on them
-    if(e.target.closest && (e.target.closest('a') || e.target.closest('.say') || e.target.closest('.exsay') || e.target.closest('#frontHintToggle'))) return;
+    deciding=false; dragging=false; axis=null;       // reset each gesture
+    // interactive bits (speaker, example speaker, links, context toggle) handle themselves.
+    // Mark the gesture 'ignore' so neither a swipe NOR the tap-to-reveal/context logic fires —
+    // their own click handlers do the work. The speaker's hit area is enlarged in CSS so a
+    // near-miss still lands here and plays sound instead of opening the context drawer.
+    if(e.target.closest && (e.target.closest('a') || e.target.closest('.say') || e.target.closest('.exsay') || e.target.closest('#frontHintToggle'))){ axis='ignore'; return; }
     if(state.tutorial) stopTutorial();
     // note whether the gesture began on the tips, so a *tap* there won't collapse them
     startedInHints = !!(e.target.closest && e.target.closest('.hints'));
     // start "deciding": don't claim the gesture or capture the pointer until we know it's a
     // horizontal swipe — that lets a vertical drag on the tips scroll the drawer natively
-    deciding=true; dragging=false; axis=null; x0=e.clientX; y0=e.clientY; dx=0;
+    deciding=true; x0=e.clientX; y0=e.clientY; dx=0; dy=0;
   }
   function engage(e){
     dragging=true; deciding=false;
@@ -531,6 +535,7 @@ function wireStudy(){
     }
   }
   function up(){
+    if(axis==='ignore'){ axis=null; return; }   // tap on speaker/link/toggle — leave it to them
     const wasDragging=dragging, ax=axis;
     deciding=false; dragging=false; sw.classList.remove('dragging'); showConfLine(false);
     if(wasDragging && ax==='free'){
