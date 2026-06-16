@@ -189,8 +189,7 @@ function render(){
   $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
-  const ctx = (c.ex&&c.ex.length)?c.ex[0]:'';
-  $('#frontCtx').innerHTML = ctx?escapeEmph(ctx,c.w):'';
+  $('#frontCtx').innerHTML = '';  // front shows word + IPA only; example lives on the revealed side
   // "marked with the pages it's used in, and where" — pages (in-range first) + location types
   const r=state.range; const PCAP=12;
   let pages=c.pg.slice();

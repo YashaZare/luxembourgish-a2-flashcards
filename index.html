@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 <div id="app">
@@ -91,21 +91,27 @@
         <div class="flash" id="flash" role="button" tabindex="0" aria-label="Flashcard. Swipe right if you know it, left if you don't. Tap to reveal the answer.">
           <div class="face front" aria-hidden="false">
             <div class="lesson-tag" id="frontLesson"></div>
-            <div class="word" id="frontWord"></div>
-            <div class="ipa" id="frontIpa"></div>
-            <div class="ctx" id="frontCtx"></div>
-            <div class="spacer"></div>
-            <div class="tap-hint">tap to reveal · swipe to grade</div>
-            <div class="meta footnote" id="frontMeta"></div>
+            <div class="face-mid">
+              <div class="word" id="frontWord"></div>
+              <div class="ipa" id="frontIpa"></div>
+              <div class="ctx" id="frontCtx"></div>
+            </div>
+            <div class="face-foot">
+              <div class="tap-hint">tap for example · swipe to grade</div>
+              <div class="meta footnote" id="frontMeta"></div>
+            </div>
           </div>
           <div class="face back" aria-hidden="true">
             <div class="pos" id="backPos"></div>
-            <div class="answer" id="backAnswer" aria-live="polite"></div>
-            <div class="ex" id="backEx"></div>
-            <div class="homo" id="backHomo"></div>
-            <div class="spacer"></div>
-            <div class="tap-hint">swipe to grade</div>
-            <div class="meta footnote" id="backMeta"></div>
+            <div class="face-mid">
+              <div class="answer" id="backAnswer" aria-live="polite"></div>
+              <div class="ex" id="backEx"></div>
+              <div class="homo" id="backHomo"></div>
+            </div>
+            <div class="face-foot">
+              <div class="tap-hint">swipe to grade</div>
+              <div class="meta footnote" id="backMeta"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -142,6 +148,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

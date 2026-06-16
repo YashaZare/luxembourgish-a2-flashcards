@@ -96,12 +96,13 @@ input{font:inherit}
 .swipe{position:absolute;inset:0;cursor:grab;touch-action:pan-y;will-change:transform}
 .swipe.dragging{cursor:grabbing}
 .flash{position:absolute;inset:0;border-radius:26px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 50px #0006}
-.face{position:absolute;inset:0;padding:30px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .26s}
+.face{position:absolute;inset:0;padding:14px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:opacity .26s}
 .face.front{background:linear-gradient(165deg,#1c2a55,#141d3a)}
 .face.back{background:linear-gradient(165deg,#16324f,#10283f);opacity:0;pointer-events:none}
 .flash.revealed .face.front{opacity:0;pointer-events:none}
 .flash.revealed .face.back{opacity:1;pointer-events:auto}
-.spacer{flex:1 1 0;min-height:8px}
+.face-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden;padding-top:24px}
+.face-foot{flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%}
 
 .lesson-tag{position:absolute;top:16px;left:0;right:0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.3px}
 .word{font-size:clamp(36px,9.5vw,56px);font-weight:800;letter-spacing:-.5px;line-height:1.1;word-break:break-word;margin-top:6px}
@@ -120,10 +121,10 @@ input{font:inherit}
   font-size:12.5px;color:var(--muted);line-height:1.5;max-width:94%}
 .homo .hwarn{display:block;color:var(--gold);font-weight:700;font-size:11px;letter-spacing:.3px;margin-bottom:3px}
 .homo b{color:var(--ink);font-weight:800}.homo .hg{color:var(--brand2)}.homo .hne{color:var(--warn);font-weight:800;padding:0 2px}
-.tap-hint{position:absolute;bottom:38px;left:0;right:0;color:#ffffff66;font-size:11.5px}
+.tap-hint{color:#ffffff66;font-size:11.5px}
 
 /* footnote: pages + where-used, de-emphasised */
-.meta.footnote{position:absolute;bottom:12px;left:0;right:0;padding:0 18px;display:flex;flex-direction:column;gap:2px;align-items:center}
+.meta.footnote{padding:0 6px;display:flex;flex-direction:column;gap:2px;align-items:center}
 .meta.footnote span{font-size:10.5px;color:#ffffff55;line-height:1.35}
 .meta.footnote .m-pages b{color:var(--accent);font-weight:700;opacity:.85}
 .meta.footnote .m-types{color:var(--brand2);opacity:.7}
