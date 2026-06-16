@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lëtzebuergesch">
+<meta name="description" content="Flashcards for Schwätzt Dir Lëtzebuergesch? A2 — learn the vocabulary from the book.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Lëtzebuergesch Flashcards — A2</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- SETUP SCREEN -->
+  <section id="setup" class="screen">
+    <header class="app-head">
+      <h1>Lëtzebuergesch <span>Flashcards</span></h1>
+      <p class="sub">Schwätzt Dir Lëtzebuergesch? <b>A2</b></p>
+    </header>
+
+    <div class="card-panel">
+      <div class="field">
+        <div class="field-label"><span>📖 Pages</span><span class="hint" id="pageHint"></span></div>
+        <div class="range-row">
+          <label>From <input type="number" id="pageFrom" inputmode="numeric"></label>
+          <label>To <input type="number" id="pageTo" inputmode="numeric"></label>
+        </div>
+        <div class="dual-slider" id="pageSlider">
+          <input type="range" id="pageFromR"><input type="range" id="pageToR">
+          <div class="track"></div><div class="track-fill" id="trackFill"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>🏷️ Word types</span>
+          <button class="link-btn" id="typeAll">all</button><button class="link-btn" id="typeNone">none</button>
+        </div>
+        <div class="chips" id="typeGroups"></div>
+        <details class="adv"><summary>Advanced — individual types</summary>
+          <div class="chips small" id="typeIndividual"></div>
+        </details>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>🌍 Answer language(s)</span><span class="hint">back of card</span></div>
+        <div class="chips" id="langChips"></div>
+      </div>
+
+      <div class="field toggles">
+        <label class="switch"><input type="checkbox" id="onlyTranslated" checked><span></span> Only words with a translation</label>
+        <label class="switch"><input type="checkbox" id="shuffle" checked><span></span> Shuffle deck</label>
+      </div>
+    </div>
+
+    <div class="start-bar">
+      <div class="count" id="deckCount">…</div>
+      <button class="primary" id="startBtn">Start learning →</button>
+    </div>
+    <footer class="credit">
+      Vocabulary from <i>Schwätzt Dir Lëtzebuergesch? A2</i> · Dictionary data: <b>LOD</b> (lod.lu, CC0)
+      <details class="about"><summary>About &amp; privacy</summary>
+        <p>A study aid for learners working through the <i>Schwätzt Dir Lëtzebuergesch? A2</i> course book.
+        Translations, pronunciations and example sentences come from the <b>Lëtzebuerger Online Dictionnaire</b>
+        (<a href="https://lod.lu" target="_blank" rel="noopener">lod.lu</a>), public domain (CC0).</p>
+        <p><b>Privacy:</b> no account, no tracking, no cookies, no analytics. Your settings stay only in your
+        browser (localStorage) and are never sent anywhere.</p>
+        <p>Not affiliated with or endorsed by the publisher of the course book. For personal educational use.</p>
+      </details>
+    </footer>
+  </section>
+
+  <!-- STUDY SCREEN -->
+  <section id="study" class="screen hidden">
+    <header class="study-head">
+      <button class="icon-btn" id="backBtn" aria-label="Back to setup">‹</button>
+      <div class="progress"><div class="bar" id="progBar"></div></div>
+      <div class="counter" id="counter">0/0</div>
+    </header>
+
+    <div class="flash-wrap" id="flashWrap">
+      <div class="flash" id="flash">
+        <div class="face front">
+          <div class="lesson-tag" id="frontLesson"></div>
+          <div class="word" id="frontWord"></div>
+          <div class="ipa" id="frontIpa"></div>
+          <div class="ctx" id="frontCtx"></div>
+          <div class="tap-hint">tap to flip</div>
+        </div>
+        <div class="face back">
+          <div class="pos" id="backPos"></div>
+          <div class="answer" id="backAnswer"></div>
+          <div class="ex" id="backEx"></div>
+          <div class="tap-hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="study-controls">
+      <button class="ctrl miss" id="missBtn">Again</button>
+      <button class="ctrl flip" id="flipBtn">Flip</button>
+      <button class="ctrl got" id="gotBtn">Got it ✓</button>
+    </div>
+    <div class="study-sub">
+      <button class="link-btn" id="prevBtn">‹ prev</button>
+      <span id="deckMeta"></span>
+      <button class="link-btn" id="reshuffleBtn">reshuffle</button>
+    </div>
+  </section>
+
+  <!-- DONE SCREEN -->
+  <section id="done" class="screen hidden">
+    <div class="done-card">
+      <div class="done-emoji">🎉</div>
+      <h2>Deck complete!</h2>
+      <p id="doneStats"></p>
+      <div class="done-btns">
+        <button class="primary" id="reviewMissed">Review missed</button>
+        <button class="ghost" id="restartDeck">Restart deck</button>
+        <button class="ghost" id="newDeck">New deck</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="loading" class="loading">Loading vocabulary…</div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
