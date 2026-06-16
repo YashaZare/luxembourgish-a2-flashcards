@@ -179,13 +179,13 @@ function start(){
   if($('#shuffle').checked) deck=shuffle(deck);
   if(!deck.length) return;
   state.range={a:+$('#pageFrom').value, b:+$('#pageTo').value};
-  state.deck=deck; state.idx=0; state.flipped=false; state.results={};
-  show('study'); render();
+  state.deck=deck; state.idx=0; state.revealed=false; state.results={};
+  show('study'); render(); playTutorial();
 }
 function render(){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
-  setFlip(false);
+  setReveal(false); resetSwipe();
   $('#frontLesson').textContent = relevantLesson(c)||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
@@ -199,9 +199,10 @@ function render(){
   const moreP=pages.length>PCAP?` +${pages.length-PCAP}`:'';
   const types=typeLabels(c.ty);
   const tShown=types.slice(0,6).join(', ')+(types.length>6?`, +${types.length-6}`:'');
-  $('#frontMeta').innerHTML =
+  const metaHTML =
     `<span class="m-pages">📄 ${c.pg.length} page${c.pg.length>1?'s':''}: ${shown.join(', ')}${moreP}</span>`+
     `<span class="m-types">🏷 ${esc(tShown)}</span>`;
+  $('#frontMeta').innerHTML = metaHTML; $('#backMeta').innerHTML = metaHTML;
   // back
   $('#backPos').textContent = c.pos||'';
   const langs=[...state.selLangs].filter(l=>d.langs.includes(l));
@@ -234,16 +235,71 @@ function render(){
   // a11y: announce front
   $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
 }
-function setFlip(v){
-  state.flipped=v;
-  const f=$('#flash'); f.classList.toggle('flipped',v);
+function setReveal(v){
+  state.revealed=v;
+  const f=$('#flash'); f.classList.toggle('revealed',v);
   f.querySelector('.front').setAttribute('aria-hidden', v);
   f.querySelector('.back').setAttribute('aria-hidden', !v);
 }
-function flip(){ setFlip(!state.flipped); }
-function mark(r){ const c=state.deck[state.idx]; if(c) state.results[c.w]=r; next(); }
+function reveal(){ setReveal(!state.revealed); }
+function resetSwipe(){
+  const sw=$('#swipe'); if(!sw) return;
+  sw.style.transition='none'; sw.style.transform=''; sw.style.opacity='';
+  $('#tint').style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
+}
+function showAnswerToast(c, verdict){
+  const langs=[...state.selLangs].filter(l=>state.data.langs.includes(l));
+  const trs=langs.map(l=>{ const t=c.tr&&c.tr[l]; if(!t) return null;
+    const arr=Array.isArray(t)?t:[t]; return `${l.toUpperCase()} ${arr.slice(0,3).join(', ')}${arr.length>3?'…':''}`; }).filter(Boolean);
+  const el=$('#ansToast');
+  el.className='ans-toast '+verdict;
+  el.innerHTML=`<div class="aw">${esc(c.w)}<span class="verdict">${verdict==='got'?'✓ known':'↻ review'}</span></div>`+
+    (trs.length?`<div class="at">${esc(trs.join('  ·  '))}</div>`:`<div class="at">— no translation —</div>`);
+  void el.offsetWidth; el.classList.add('show');
+  clearTimeout(state.toastT); state.toastT=setTimeout(()=>el.classList.remove('show'), 2700);
+}
+function grade(verdict){               // 'got' | 'miss'
+  if(state.animating) return;
+  const c=state.deck[state.idx]; if(!c) return;
+  state.results[c.w]=verdict;
+  showAnswerToast(c, verdict);
+  state.animating=true;
+  const sw=$('#swipe'), dir=verdict==='got'?1:-1;
+  sw.style.transition='transform .34s ease-out, opacity .34s ease-out';
+  sw.style.transform=`translateX(${dir*140}%) rotate(${dir*18}deg)`;
+  sw.style.opacity='0';
+  setTimeout(()=>{
+    state.animating=false;
+    if(state.idx<state.deck.length-1){ state.idx++; render(); popIn(); }
+    else done();
+  }, 340);
+}
+function popIn(){
+  const sw=$('#swipe'); sw.style.transition='none'; sw.style.transform='scale(.96)'; sw.style.opacity='.4';
+  requestAnimationFrame(()=>{ sw.style.transition='transform .2s, opacity .2s'; sw.style.transform=''; sw.style.opacity=''; });
+}
 function next(){ if(state.idx<state.deck.length-1){state.idx++;render();} else done(); }
 function prev(){ if(state.idx>0){state.idx--;render();} }
+function playTutorial(){
+  const tut=$('#tut'); if(!tut) return;
+  stopTutorial();                       // clear any prior run
+  tut.classList.remove('hidden','fade');
+  state.tutorial=true;
+  const sw=$('#swipe'), tint=$('#tint');
+  const steps=[
+    [250, ()=>{ sw.style.transition='transform .5s ease, opacity .3s'; sw.style.transform='translateX(72px) rotate(5deg)'; tint.style.background='var(--accent)'; tint.style.opacity=.26; $('#stampGot').style.opacity=.9; }],
+    [850, ()=>{ sw.style.transform='translateX(-72px) rotate(-5deg)'; tint.style.background='var(--warn)'; tint.style.opacity=.26; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=.9; }],
+    [1450,()=>{ sw.style.transform='translateX(0) rotate(0)'; tint.style.opacity=0; $('#stampMiss').style.opacity=0; }],
+    [1900,()=>{ tut.classList.add('fade'); }],
+    [2250,()=>{ stopTutorial(); }],
+  ];
+  state.tutTimers=steps.map(([t,fn])=>setTimeout(fn,t));
+}
+function stopTutorial(){
+  if(state.tutTimers){ state.tutTimers.forEach(clearTimeout); state.tutTimers=null; }
+  const tut=$('#tut'); if(tut){ tut.classList.add('hidden'); tut.classList.remove('fade'); }
+  resetSwipe(); state.tutorial=false;
+}
 function done(){
   const got=Object.values(state.results).filter(x=>x==='got').length;
   const miss=Object.values(state.results).filter(x=>x==='miss').length;
@@ -255,37 +311,62 @@ function done(){
 
 // ---- nav wiring ----
 function wireStudy(){
-  $('#flash').onclick = flip;
-  $('#flash').onkeydown = e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); flip(); } };
-  $('#flipBtn').onclick = flip;
-  $('#gotBtn').onclick = ()=>mark('got');
-  $('#missBtn').onclick = ()=>mark('miss');
-  $('#prevBtn').onclick = prev;
-  $('#backBtn').onclick = ()=>show('setup');
-  $('#reshuffleBtn').onclick = ()=>{ state.deck=shuffle(state.deck); state.idx=0; render(); };
-  $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); };
+  const flash=$('#flash'), sw=$('#swipe'), tint=$('#tint');
+  $('#prevBtn').onclick = ()=>{ stopTutorial(); prev(); };
+  $('#backBtn').onclick = ()=>{ stopTutorial(); show('setup'); };
+  $('#reshuffleBtn').onclick = ()=>{ state.deck=shuffle(state.deck); state.idx=0; render(); playTutorial(); };
+  $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); playTutorial(); };
   $('#newDeck').onclick = ()=>show('setup');
   $('#reviewMissed').onclick = ()=>{
     const set=new Set(Object.keys(state.results).filter(w=>state.results[w]==='miss'));
     state.deck=state.deck.filter(c=>set.has(c.w)); state.idx=0; state.results={};
-    if(state.deck.length){ show('study'); render(); } else show('setup');
+    if(state.deck.length){ show('study'); render(); playTutorial(); } else show('setup');
   };
-  // swipe
-  let x0=null,y0=null;
-  const w=$('#flashWrap');
-  w.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
-  w.addEventListener('touchend',e=>{
-    if(x0==null) return; const dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
-    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
-    x0=y0=null;
-  },{passive:true});
-  // keyboard (desktop) — ignore when focus is on a control to avoid double activation
+  flash.onkeydown = e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); stopTutorial(); reveal(); } };
+
+  // ---- swipe (pointer = touch + mouse) ----
+  let dragging=false, x0=0, y0=0, dx=0, moved=false;
+  const THRESH=88;
+  function down(e){
+    if(state.animating) return;
+    if(state.tutorial) stopTutorial();
+    dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
+    sw.style.transition='none'; sw.classList.add('dragging');
+    try{ sw.setPointerCapture(e.pointerId); }catch(_){}
+  }
+  function move(e){
+    if(!dragging) return;
+    dx=e.clientX-x0;
+    if(Math.abs(dx)>6) moved=true;
+    sw.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`;
+    const t=Math.min(Math.abs(dx)/THRESH,1);
+    tint.style.background = dx>=0?'var(--accent)':'var(--warn)';
+    tint.style.opacity = (moved? t*0.32 : 0);
+    $('#stampGot').style.opacity = dx>0? t : 0;
+    $('#stampMiss').style.opacity = dx<0? t : 0;
+  }
+  function up(){
+    if(!dragging) return; dragging=false; sw.classList.remove('dragging');
+    if(Math.abs(dx)>=THRESH){ grade(dx>0?'got':'miss'); return; }
+    if(!moved){ reveal(); }                       // a tap reveals the answer
+    sw.style.transition='transform .25s, opacity .25s'; sw.style.transform='';
+    tint.style.opacity=0; $('#stampGot').style.opacity=0; $('#stampMiss').style.opacity=0;
+  }
+  sw.addEventListener('pointerdown',down);
+  sw.addEventListener('pointermove',move);
+  sw.addEventListener('pointerup',up);
+  sw.addEventListener('pointercancel',up);
+
+  // keyboard (desktop)
   document.addEventListener('keydown',e=>{
     if($('#study').classList.contains('hidden')) return;
     if((e.key===' '||e.key==='Enter') && e.target.closest && e.target.closest('button')) return;
-    if(e.key===' '||e.key==='Enter'){e.preventDefault();flip();}
-    else if(e.key==='ArrowRight')next(); else if(e.key==='ArrowLeft')prev();
-    else if(e.key==='1')mark('miss'); else if(e.key==='2')mark('got');
+    if(state.tutorial) stopTutorial();
+    if(e.key===' '||e.key==='Enter'){ e.preventDefault(); reveal(); }
+    else if(e.key==='ArrowRight') grade('got');
+    else if(e.key==='ArrowLeft')  grade('miss');
+    else if(e.key==='1') grade('miss');
+    else if(e.key==='2') grade('got');
   });
 }
 

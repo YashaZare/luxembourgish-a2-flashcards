@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <div id="app">
@@ -82,30 +82,43 @@
     </header>
 
     <div class="flash-wrap" id="flashWrap">
-      <div class="flash" id="flash" role="button" tabindex="0" aria-label="Flashcard">
-        <div class="face front" aria-hidden="false">
-          <div class="lesson-tag" id="frontLesson"></div>
-          <div class="word" id="frontWord"></div>
-          <div class="ipa" id="frontIpa"></div>
-          <div class="ctx" id="frontCtx"></div>
-          <div class="meta" id="frontMeta"></div>
-          <div class="tap-hint">tap or press Space to flip</div>
+      <div class="edge-hint left" id="hintLeft">✗ don't know</div>
+      <div class="edge-hint right" id="hintRight">know it ✓</div>
+      <div class="swipe" id="swipe">
+        <div class="tint" id="tint"></div>
+        <div class="stamp got" id="stampGot">KNOW IT ✓</div>
+        <div class="stamp miss" id="stampMiss">✗ AGAIN</div>
+        <div class="flash" id="flash" role="button" tabindex="0" aria-label="Flashcard. Swipe right if you know it, left if you don't. Tap to reveal the answer.">
+          <div class="face front" aria-hidden="false">
+            <div class="lesson-tag" id="frontLesson"></div>
+            <div class="word" id="frontWord"></div>
+            <div class="ipa" id="frontIpa"></div>
+            <div class="ctx" id="frontCtx"></div>
+            <div class="spacer"></div>
+            <div class="tap-hint">tap to reveal · swipe to grade</div>
+            <div class="meta footnote" id="frontMeta"></div>
+          </div>
+          <div class="face back" aria-hidden="true">
+            <div class="pos" id="backPos"></div>
+            <div class="answer" id="backAnswer" aria-live="polite"></div>
+            <div class="ex" id="backEx"></div>
+            <div class="homo" id="backHomo"></div>
+            <div class="spacer"></div>
+            <div class="tap-hint">swipe to grade</div>
+            <div class="meta footnote" id="backMeta"></div>
+          </div>
         </div>
-        <div class="face back" aria-hidden="true">
-          <div class="pos" id="backPos"></div>
-          <div class="answer" id="backAnswer" aria-live="polite"></div>
-          <div class="ex" id="backEx"></div>
-          <div class="homo" id="backHomo"></div>
-          <div class="tap-hint">tap or press Space to flip back</div>
-        </div>
+      </div>
+      <!-- one-time-per-batch swipe tutorial -->
+      <div class="tut hidden" id="tut">
+        <div class="tut-arrow l">←</div><div class="tut-arrow r">→</div>
+        <div class="tut-text">Swipe <b class="g">right if you know it</b><br>· <b class="r">left if you don't</b></div>
       </div>
     </div>
 
-    <div class="study-controls">
-      <button class="ctrl miss" id="missBtn">Again</button>
-      <button class="ctrl flip" id="flipBtn">Flip</button>
-      <button class="ctrl got" id="gotBtn">Got it ✓</button>
-    </div>
+    <!-- answer reveal after a swipe -->
+    <div class="ans-toast" id="ansToast" aria-live="polite"></div>
+
     <div class="study-sub">
       <button class="link-btn" id="prevBtn">‹ prev</button>
       <span id="deckMeta"></span>
@@ -129,6 +142,6 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
