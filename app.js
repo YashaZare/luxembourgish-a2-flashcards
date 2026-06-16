@@ -28,9 +28,10 @@ const LS = 'lux-fc-settings';
 async function boot(){
   try{
     const res = await fetch('data/flashcards.json', {cache:'force-cache'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
     state.data = await res.json();
   }catch(e){
-    $('#loading').textContent = 'Could not load vocabulary data.';
+    $('#loading').textContent = 'Could not load vocabulary data. Please refresh.';
     return;
   }
   $('#loading').classList.add('hidden');
@@ -41,6 +42,7 @@ async function boot(){
 
 function buildSetup(){
   const d = state.data;
+  const present = new Set(d.types);
   // pages
   $('#pageFrom').min = $('#pageTo').min = $('#pageFromR').min = $('#pageToR').min = d.pageMin;
   $('#pageFrom').max = $('#pageTo').max = $('#pageFromR').max = $('#pageToR').max = d.pageMax;
@@ -49,69 +51,69 @@ function buildSetup(){
   $('#pageHint').textContent = `book pages ${d.pageMin}–${d.pageMax}`;
   syncSlider();
 
-  // type groups (only show groups whose types exist in data)
-  const present = new Set(d.types);
+  // type groups (only show groups whose types exist in data) — all ON by default
   const tg = $('#typeGroups'); tg.innerHTML = '';
   TYPE_GROUPS.forEach(g=>{
     const has = g.types.filter(t=>present.has(t));
     if(!has.length) return;
-    const el = chip(g.label, true);
-    el.dataset.group = g.key;
-    el.onclick = ()=>{ el.classList.toggle('on'); applyGroups(); recount(); persist(); };
+    const el = chip(g.label, true); el.dataset.group = g.key;
+    el.onclick = ()=>{
+      const on = el.classList.toggle('on'); el.setAttribute('aria-pressed', on);
+      g.types.forEach(t=>{ if(present.has(t)){ on ? state.selTypes.add(t) : state.selTypes.delete(t); } });
+      syncIndividual(); recount(); persist();
+    };
     tg.appendChild(el);
     g.types.forEach(t=>{ if(present.has(t)) state.selTypes.add(t); });
   });
-  // individual types
+  // individual types (default reflects groups = all on)
   const ti = $('#typeIndividual'); ti.innerHTML='';
   d.types.forEach(t=>{
     const el = chip(t, true); el.dataset.type=t; el.classList.add('itype');
-    el.onclick = ()=>{ el.classList.toggle('on');
-      el.classList.contains('on')?state.selTypes.add(t):state.selTypes.delete(t);
-      syncGroupChips(); recount(); persist(); };
+    el.onclick = ()=>{
+      const on = el.classList.toggle('on'); el.setAttribute('aria-pressed', on);
+      on ? state.selTypes.add(t) : state.selTypes.delete(t);
+      syncGroupChips(); recount(); persist();
+    };
     ti.appendChild(el);
   });
-  syncIndividual();
 
   // languages
   const lc = $('#langChips'); lc.innerHTML='';
   d.langs.forEach(l=>{
     const el = chip(`${d.langLabels[l]||l}`, state.selLangs.has(l)); el.classList.add('lang'); el.dataset.lang=l;
-    el.onclick = ()=>{ el.classList.toggle('on');
-      el.classList.contains('on')?state.selLangs.add(l):state.selLangs.delete(l);
-      if(state.selLangs.size===0){state.selLangs.add(l);el.classList.add('on');}
-      recount(); persist(); };
+    el.onclick = ()=>{
+      const on = el.classList.toggle('on');
+      on ? state.selLangs.add(l) : state.selLangs.delete(l);
+      if(state.selLangs.size===0){ state.selLangs.add(l); el.classList.add('on'); }
+      $$('#langChips .chip').forEach(c=>c.setAttribute('aria-pressed', c.classList.contains('on')));
+      recount(); persist();
+    };
     lc.appendChild(el);
   });
 
-  // wire controls
+  // controls
   ['pageFrom','pageTo'].forEach(id=>$('#'+id).oninput = ()=>{clampPages(id);syncSlider(true);recount();persist();});
   ['pageFromR','pageToR'].forEach(id=>$('#'+id).oninput = ()=>{fromSlider();recount();persist();});
-  $('#typeAll').onclick = ()=>{ $$('#typeGroups .chip').forEach(c=>c.classList.add('on')); applyGroups(); recount(); persist(); };
-  $('#typeNone').onclick = ()=>{ $$('#typeGroups .chip').forEach(c=>c.classList.remove('on')); applyGroups(); recount(); persist(); };
+  $('#typeAll').onclick = ()=>{ $$('#typeGroups .chip').forEach(c=>{c.classList.add('on');c.setAttribute('aria-pressed','true');});
+    state.data.types.forEach(t=>state.selTypes.add(t)); syncIndividual(); recount(); persist(); };
+  $('#typeNone').onclick = ()=>{ $$('#typeGroups .chip').forEach(c=>{c.classList.remove('on');c.setAttribute('aria-pressed','false');});
+    state.selTypes.clear(); syncIndividual(); recount(); persist(); };
   $('#onlyTranslated').onchange = ()=>{recount();persist();};
   $('#shuffle').onchange = persist;
   $('#startBtn').onclick = start;
+  syncGroupChips();
 }
 
-function chip(label, on){ const b=document.createElement('button'); b.className='chip'+(on?' on':''); b.textContent=label; return b; }
+function chip(label, on){ const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':'');
+  b.textContent=label; b.setAttribute('aria-pressed', !!on); return b; }
 
 // ---- type group <-> individual sync ----
-function applyGroups(){
-  state.selTypes.clear();
-  $$('#typeGroups .chip.on').forEach(c=>{
-    const g = TYPE_GROUPS.find(x=>x.key===c.dataset.group);
-    g.types.forEach(t=>{ if(state.data.types.includes(t)) state.selTypes.add(t); });
-  });
-  syncIndividual();
-}
-function syncIndividual(){ $$('#typeIndividual .chip').forEach(c=>c.classList.toggle('on', state.selTypes.has(c.dataset.type))); }
-function syncGroupChips(){
-  $$('#typeGroups .chip').forEach(c=>{
-    const g = TYPE_GROUPS.find(x=>x.key===c.dataset.group);
-    const any = g.types.some(t=>state.selTypes.has(t));
-    c.classList.toggle('on', any);
-  });
-}
+function syncIndividual(){ $$('#typeIndividual .chip').forEach(c=>{
+  const on=state.selTypes.has(c.dataset.type); c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
+function syncGroupChips(){ $$('#typeGroups .chip').forEach(c=>{
+  const g = TYPE_GROUPS.find(x=>x.key===c.dataset.group);
+  const any = g.types.some(t=>state.selTypes.has(t));
+  c.classList.toggle('on', any); c.setAttribute('aria-pressed', any); }); }
 
 // ---- page range ----
 function clampPages(which){
@@ -141,8 +143,9 @@ function currentFilter(){
   const langs=[...state.selLangs];
   return state.data.cards.filter(c=>{
     if(!c.pg.some(p=>p>=a && p<=b)) return false;
-    if(state.selTypes.size && !c.ty.some(t=>state.selTypes.has(t))) return false;
-    if(onlyTr){ if(!c.tr) return false; if(!langs.some(l=>c.tr[l])) return false; }
+    // empty type selection => no cards (matches the empty UI)
+    if(!c.ty.some(t=>state.selTypes.has(t))) return false;
+    if(onlyTr && !langs.some(l=>c.tr && c.tr[l])) return false;
     return true;
   });
 }
@@ -164,12 +167,11 @@ function start(){
 function render(){
   const c=state.deck[state.idx]; if(!c) return done();
   const d=state.data;
-  $('#flash').classList.remove('flipped'); state.flipped=false;
+  setFlip(false);
   $('#frontLesson').textContent = (c.ls&&c.ls[0])||'';
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
-  // context: a LOD example sentence (CC0) with the word emphasised
-  let ctx = (c.ex&&c.ex.length)?c.ex[0]:'';
+  const ctx = (c.ex&&c.ex.length)?c.ex[0]:'';
   $('#frontCtx').innerHTML = ctx?escapeEmph(ctx,c.w):'';
   // back
   $('#backPos').textContent = c.pos||'';
@@ -178,21 +180,28 @@ function render(){
   langs.forEach(l=>{
     const ln=document.createElement('div'); ln.className='ln';
     const tr=(c.tr&&c.tr[l])||null;
+    const trv = Array.isArray(tr)?tr.join(', '):(tr?String(tr):null);
     ln.innerHTML = `<span class="flag">${l.toUpperCase()}</span>`+
-      (tr? `<span class="tr">${esc(tr.join(', '))}</span>` : `<span class="clar">— no translation —</span>`);
+      (trv? `<span class="tr">${esc(trv)}</span>` : `<span class="clar">— no translation —</span>`);
     ans.appendChild(ln);
   });
-  const ex=$('#backEx');
-  // show a different LOD example on the back if available, else the first
   const exBack = (c.ex && c.ex.length>1) ? c.ex[1] : (c.ex && c.ex[0]);
-  if(exBack){ ex.innerHTML = `<span class="exl">e.g.</span> ${esc(exBack)}`; }
-  else ex.innerHTML='';
+  $('#backEx').innerHTML = exBack ? `<span class="exl">e.g.</span> ${esc(exBack)}` : '';
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
-  $('#deckMeta').textContent = `page ${Math.min(...c.pg)} · freq ${c.f}`;
+  const p = (c.pg&&c.pg.length)?Math.min(...c.pg):'?';
+  $('#deckMeta').textContent = `page ${p} · freq ${c.f??''}`;
+  // a11y: announce front
+  $('#flash').setAttribute('aria-label', `Card ${state.idx+1} of ${state.deck.length}: ${c.w}. Activate to reveal translation.`);
 }
-function flip(){ state.flipped=!state.flipped; $('#flash').classList.toggle('flipped',state.flipped); }
+function setFlip(v){
+  state.flipped=v;
+  const f=$('#flash'); f.classList.toggle('flipped',v);
+  f.querySelector('.front').setAttribute('aria-hidden', v);
+  f.querySelector('.back').setAttribute('aria-hidden', !v);
+}
+function flip(){ setFlip(!state.flipped); }
 function mark(r){ const c=state.deck[state.idx]; if(c) state.results[c.w]=r; next(); }
 function next(){ if(state.idx<state.deck.length-1){state.idx++;render();} else done(); }
 function prev(){ if(state.idx>0){state.idx--;render();} }
@@ -208,6 +217,7 @@ function done(){
 // ---- nav wiring ----
 function wireStudy(){
   $('#flash').onclick = flip;
+  $('#flash').onkeydown = e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); flip(); } };
   $('#flipBtn').onclick = flip;
   $('#gotBtn').onclick = ()=>mark('got');
   $('#missBtn').onclick = ()=>mark('miss');
@@ -217,8 +227,7 @@ function wireStudy(){
   $('#restartDeck').onclick = ()=>{ state.idx=0; state.results={}; show('study'); render(); };
   $('#newDeck').onclick = ()=>show('setup');
   $('#reviewMissed').onclick = ()=>{
-    const missed=Object.keys(state.results).filter(w=>state.results[w]==='miss');
-    const set=new Set(missed);
+    const set=new Set(Object.keys(state.results).filter(w=>state.results[w]==='miss'));
     state.deck=state.deck.filter(c=>set.has(c.w)); state.idx=0; state.results={};
     if(state.deck.length){ show('study'); render(); } else show('setup');
   };
@@ -231,9 +240,10 @@ function wireStudy(){
     if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
     x0=y0=null;
   },{passive:true});
-  // keyboard (desktop)
+  // keyboard (desktop) — ignore when focus is on a control to avoid double activation
   document.addEventListener('keydown',e=>{
     if($('#study').classList.contains('hidden')) return;
+    if((e.key===' '||e.key==='Enter') && e.target.closest && e.target.closest('button')) return;
     if(e.key===' '||e.key==='Enter'){e.preventDefault();flip();}
     else if(e.key==='ArrowRight')next(); else if(e.key==='ArrowLeft')prev();
     else if(e.key==='1')mark('miss'); else if(e.key==='2')mark('got');
@@ -241,13 +251,20 @@ function wireStudy(){
 }
 
 // ---- helpers ----
-function show(id){ ['setup','study','done'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
-  window.scrollTo(0,0); }
+function show(id){
+  ['setup','study','done'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
+  window.scrollTo(0,0);
+  const sec=$('#'+id); sec.setAttribute('tabindex','-1');
+  try{ sec.focus({preventScroll:true}); }catch(e){ sec.focus(); }
+}
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function esc(s){ return (s+'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 function escapeEmph(sentence,word){
-  const e=esc(sentence); const re=new RegExp(`(^|[^\\p{L}])(${word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})(?=[^\\p{L}]|$)`,'iu');
-  return e.replace(re,(m,a,b)=>`${a}<b>${b}</b>`);
+  const e=esc(sentence); const ew=esc(word);
+  try{
+    const re=new RegExp(`(^|[^\\p{L}])(${ew.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})(?=[^\\p{L}]|$)`,'iu');
+    return e.replace(re,(m,a,b)=>`${a}<b>${b}</b>`);
+  }catch(err){ return e; }
 }
 
 // ---- persistence ----
@@ -260,11 +277,20 @@ function persist(){
 function restoreSettings(){
   let s; try{ s=JSON.parse(localStorage.getItem(LS)); }catch(e){}
   if(!s) return;
-  if(s.from) $('#pageFrom').value=$('#pageFromR').value=s.from;
-  if(s.to) $('#pageTo').value=$('#pageToR').value=s.to;
-  if(s.langs&&s.langs.length){ state.selLangs=new Set(s.langs.filter(l=>state.data.langs.includes(l)));
-    $$('#langChips .chip').forEach(c=>c.classList.toggle('on',state.selLangs.has(c.dataset.lang))); }
-  if(s.types){ state.selTypes=new Set(s.types.filter(t=>state.data.types.includes(t))); syncIndividual(); syncGroupChips(); }
+  const d=state.data;
+  // page range — clamp into bounds and order
+  let f = Math.min(Math.max(+s.from||d.pageMin, d.pageMin), d.pageMax);
+  let t = Math.min(Math.max(+s.to||d.pageMax, d.pageMin), d.pageMax);
+  if(f>t) [f,t]=[t,f];
+  $('#pageFrom').value=$('#pageFromR').value=f; $('#pageTo').value=$('#pageToR').value=t;
+  if(s.langs && s.langs.length){
+    const valid=s.langs.filter(l=>d.langs.includes(l));
+    if(valid.length){ state.selLangs=new Set(valid);
+      $$('#langChips .chip').forEach(c=>{const on=state.selLangs.has(c.dataset.lang);c.classList.toggle('on',on);c.setAttribute('aria-pressed',on);}); }
+  }
+  if(Array.isArray(s.types)){ // explicit list (may be empty = none)
+    state.selTypes=new Set(s.types.filter(t=>d.types.includes(t))); syncIndividual(); syncGroupChips();
+  }
   if(typeof s.onlyTr==='boolean') $('#onlyTranslated').checked=s.onlyTr;
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
   syncSlider(); paintSlider();

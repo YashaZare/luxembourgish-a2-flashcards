@@ -19,6 +19,11 @@ body{background:radial-gradient(1200px 600px at 50% -10%,#1a2a55 0%,transparent 
 .hidden{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none;touch-action:manipulation}
 input{font:inherit}
+:focus-visible{outline:2px solid var(--brand2);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){
+  .flash{transition:none!important}.progress .bar{transition:none}
+  .primary:active,.ctrl:active{transform:none}.chip{transition:none}
+}
 
 /* ---------- setup ---------- */
 .app-head{text-align:center;margin:6px 0 16px}
@@ -31,12 +36,11 @@ input{font:inherit}
   border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:20px}
 .field-label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:15px;margin-bottom:10px}
 .field-label .hint{font-weight:500;color:var(--muted);font-size:13px}
-.link-btn{color:var(--brand2);font-size:13px;font-weight:600;padding:4px 6px}
+.link-btn{color:var(--brand2);font-size:13px;font-weight:600;padding:0 8px;min-height:44px;display:inline-flex;align-items:center}
 .range-row{display:flex;gap:12px;margin-bottom:12px}
 .range-row label{flex:1;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;
   background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 .range-row input{width:100%;background:transparent;border:none;color:var(--ink);font-size:17px;font-weight:700;-webkit-appearance:none}
-.range-row input:focus{outline:none}
 
 .dual-slider{position:relative;height:34px;display:flex;align-items:center}
 .dual-slider .track{position:absolute;left:0;right:0;height:5px;background:var(--panel2);border-radius:5px}
@@ -56,14 +60,16 @@ input{font:inherit}
 .adv summary{color:var(--muted);font-size:13px;cursor:pointer;padding:4px 0}
 
 .toggles{display:flex;flex-direction:column;gap:14px}
-.switch{display:flex;align-items:center;gap:12px;font-size:14.5px;color:var(--ink)}
-.switch input{display:none}
+.switch{display:flex;align-items:center;gap:12px;font-size:14.5px;color:var(--ink);position:relative;min-height:44px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.switch input:focus-visible + span{outline:2px solid var(--brand2);outline-offset:2px}
 .switch span{width:46px;height:28px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);position:relative;transition:.15s;flex:none}
 .switch span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}
 .switch input:checked + span{background:var(--brand)}
 .switch input:checked + span::after{transform:translateX(18px)}
 
-.start-bar{position:sticky;bottom:0;margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:12px}
+.start-bar{position:sticky;bottom:0;margin:auto -16px 0;padding:14px 16px calc(var(--safe-b) + 8px);display:flex;align-items:center;gap:12px;
+  background:linear-gradient(to top,var(--bg) 74%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .count{flex:1;color:var(--muted);font-size:14px}
 .count b{color:var(--ink);font-size:17px}
 .primary{background:linear-gradient(180deg,var(--brand2),var(--brand));color:#fff;font-weight:800;font-size:17px;
@@ -76,13 +82,13 @@ input{font:inherit}
 /* ---------- study ---------- */
 #study{padding-top:calc(var(--safe-t) + 8px)}
 .study-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.icon-btn{font-size:30px;line-height:1;width:40px;height:40px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.icon-btn{font-size:30px;line-height:1;width:44px;height:44px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
 .progress{flex:1;height:8px;background:var(--panel2);border-radius:8px;overflow:hidden}
 .progress .bar{height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--accent));transition:width .25s}
 .counter{color:var(--muted);font-size:14px;font-weight:700;min-width:54px;text-align:right}
 
 .flash-wrap{flex:1;display:flex;align-items:center;justify-content:center;perspective:1400px;padding:6px 0}
-.flash{position:relative;width:100%;height:min(62vh,520px);transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.flash{position:relative;width:100%;height:min(62vh,520px);height:min(56dvh,520px);transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.8,.2,1);cursor:pointer;will-change:transform}
 .flash.flipped{transform:rotateY(180deg)}
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:26px;
   border:1px solid var(--line);padding:26px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
@@ -102,7 +108,7 @@ input{font:inherit}
 .answer .clar{color:var(--muted);font-size:13px;font-weight:500}
 .ex{margin-top:18px;color:var(--muted);font-size:14px;line-height:1.5;max-width:92%}
 .ex .exl{color:var(--accent);font-style:italic}
-.tap-hint{position:absolute;bottom:16px;left:0;right:0;color:#ffffff44;font-size:12px}
+.tap-hint{position:absolute;bottom:16px;left:0;right:0;color:#ffffff99;font-size:12px}
 
 .study-controls{display:flex;gap:10px;margin-top:14px}
 .ctrl{flex:1;padding:15px 8px;border-radius:14px;font-weight:800;font-size:15px;border:1px solid var(--line)}
@@ -130,4 +136,5 @@ input{font:inherit}
   .face.back{background:linear-gradient(165deg,#eafaf4,#ffffff)}
   .answer .tr{color:#0f2c22}
   .word{color:#13203a}
+  .tap-hint{color:#13203a66}
 }

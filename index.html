@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,7 +30,7 @@
           <label>To <input type="number" id="pageTo" inputmode="numeric"></label>
         </div>
         <div class="dual-slider" id="pageSlider">
-          <input type="range" id="pageFromR"><input type="range" id="pageToR">
+          <input type="range" id="pageFromR" aria-label="Page range start"><input type="range" id="pageToR" aria-label="Page range end">
           <div class="track"></div><div class="track-fill" id="trackFill"></div>
         </div>
       </div>
@@ -77,24 +77,24 @@
   <section id="study" class="screen hidden">
     <header class="study-head">
       <button class="icon-btn" id="backBtn" aria-label="Back to setup">‹</button>
-      <div class="progress"><div class="bar" id="progBar"></div></div>
-      <div class="counter" id="counter">0/0</div>
+      <div class="progress" aria-hidden="true"><div class="bar" id="progBar"></div></div>
+      <div class="counter" id="counter" aria-live="polite">0/0</div>
     </header>
 
     <div class="flash-wrap" id="flashWrap">
-      <div class="flash" id="flash">
-        <div class="face front">
+      <div class="flash" id="flash" role="button" tabindex="0" aria-label="Flashcard">
+        <div class="face front" aria-hidden="false">
           <div class="lesson-tag" id="frontLesson"></div>
           <div class="word" id="frontWord"></div>
           <div class="ipa" id="frontIpa"></div>
           <div class="ctx" id="frontCtx"></div>
-          <div class="tap-hint">tap to flip</div>
+          <div class="tap-hint">tap or press Space to flip</div>
         </div>
-        <div class="face back">
+        <div class="face back" aria-hidden="true">
           <div class="pos" id="backPos"></div>
-          <div class="answer" id="backAnswer"></div>
+          <div class="answer" id="backAnswer" aria-live="polite"></div>
           <div class="ex" id="backEx"></div>
-          <div class="tap-hint">tap to flip back</div>
+          <div class="tap-hint">tap or press Space to flip back</div>
         </div>
       </div>
     </div>
