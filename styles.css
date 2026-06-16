@@ -142,6 +142,10 @@ input{font:inherit}
 .base-form{font-size:13.5px;color:var(--brand2);font-weight:700}
 .base-form .bf-label{color:var(--muted);font-weight:500}
 .base-form:empty{display:none}
+.lod-link{font-size:13px}
+.lod-link:empty{display:none}
+.lod-link a{color:var(--brand2);font-weight:700;text-decoration:none;border-bottom:1px solid #7aa2ff55;padding:2px 0}
+.lod-link a:active{opacity:.6}
 
 /* footnote: pages + where-used, de-emphasised */
 .meta.footnote{padding:0 6px;display:flex;flex-direction:column;gap:2px;align-items:center}

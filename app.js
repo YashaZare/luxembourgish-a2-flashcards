@@ -40,7 +40,7 @@ function typeLabels(types){
 
 const LS = 'lux-fc-settings';
 
-const DATA_VERSION = '7';  // bump when flashcards.json changes (cache-busts the data URL)
+const DATA_VERSION = '8';  // bump when flashcards.json changes (cache-busts the data URL)
 
 async function boot(){
   try{
@@ -250,6 +250,10 @@ function render(){
     $('#backHomo').innerHTML = `<span class="hwarn">⚠ same spelling, different word:</span> ${parts.join(' <span class="hne">≠</span> ')}`;
     $('#backHomo').style.display='';
   } else { $('#backHomo').innerHTML=''; $('#backHomo').style.display='none'; }
+  // direct LOD dictionary link(s) at the bottom of the answer side
+  $('#backLod').innerHTML = (c.lod && c.lod.length)
+    ? c.lod.map(x=>`<a href="https://lod.lu/artikel/${encodeURIComponent(x.id)}" target="_blank" rel="noopener">${esc(x.l)} on LOD ↗</a>`).join(' · ')
+    : '';
   // progress
   $('#counter').textContent = `${state.idx+1}/${state.deck.length}`;
   $('#progBar').style.width = (state.idx/state.deck.length*100)+'%';
@@ -357,6 +361,7 @@ function wireStudy(){
   const THRESH=88;
   function down(e){
     if(state.animating) return;
+    if(e.target.closest && e.target.closest('a')) return;  // let links (e.g. LOD) work natively
     if(state.tutorial) stopTutorial();
     dragging=true; moved=false; x0=e.clientX; y0=e.clientY; dx=0;
     sw.style.transition='none'; sw.classList.add('dragging');
