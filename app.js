@@ -261,8 +261,8 @@ function render(skipPeek){
   const types=typeLabels(c.ty);
   const tShown=types.slice(0,6).join(', ')+(types.length>6?`, +${types.length-6}`:'');
   const metaHTML =
-    `<span class="m-pages">📄 ${c.pg.length} page${c.pg.length>1?'s':''}: ${shown.join(', ')}${moreP}</span>`+
-    `<span class="m-types">🏷 ${esc(tShown)}</span>`;
+    `<span class="m-pages"><i class="ic ic-pages"></i> ${c.pg.length} page${c.pg.length>1?'s':''}: ${shown.join(', ')}${moreP}</span>`+
+    `<span class="m-types"><i class="ic ic-word-types"></i> ${esc(tShown)}</span>`;
   $('#backMeta').innerHTML = metaHTML;
 
   // ---- context drawer (revealed on tapping the bottom): the book sentences from the
@@ -462,7 +462,7 @@ function done(){
   let extra='';
   if(global_SRS()){ const t=SRS.store.totals();
     extra = `<br><span class="done-mem">🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
-            (t.due?` · 🔁 ${t.due} still due`:` · all reviews cleared ✓`)+`</span>`; }
+            (t.due?` · <i class="ic ic-due"></i> ${t.due} still due`:` · all reviews cleared ✓`)+`</span>`; }
   $('#doneStats').innerHTML = `You went through <b>${state.deck.length}</b> cards.<br>✓ ${got} got &nbsp; • &nbsp; ↻ ${miss} to review${extra}`;
   $('#reviewMissed').style.display = miss?'':'none';
   show('done');
@@ -881,7 +881,7 @@ function viewTypes(P){
 }
 function emptyMonitor(){
   const L=state.data.lessons.length, pmin=state.data.pageMin, pmax=state.data.pageMax;
-  return `<div class="mon-empty"><div class="me-glyph">📖</div>`+
+  return `<div class="mon-empty"><div class="me-glyph"><i class="ic ic-pages"></i></div>`+
     `<div class="me-t">Your book is waiting.</div>`+
     `<div class="me-s">${pmax-pmin+1} pages · ${L} lessons · 0 studied</div>`+
     `<button class="primary me-cta" id="monStartBtn">Start with page ${pmin} →</button></div>`;
@@ -911,8 +911,8 @@ function openDrill(scope){
     `<div class="sh-title">${title}<span class="sh-sub">${sub}</span></div>`+
     `<div class="sh-score b-${Progress.bucketOf(b)}">${pct(b.score)}% mastered</div>`+
     `<div class="sh-counts">`+
-      `<span>✓ ${b.known} known</span><span>◐ ${b.learning} learning</span>`+
-      `<span>· ${b.new} new</span>${strug?`<span class="strug">✗ ${strug} struggling</span>`:''}</div>`+
+      `<span><i class="ic ic-known"></i> ${b.known} known</span><span>◐ ${b.learning} learning</span>`+
+      `<span>· ${b.new} new</span>${strug?`<span class="strug"><i class="ic ic-struggling"></i> ${strug} struggling</span>`:''}</div>`+
     `<div class="sh-btns">`+
       `<button class="primary" id="drillStudy">Study ${b.total} word${b.total!==1?'s':''}</button>`+
       (due?`<button class="ghost" id="drillDue">Review ${due} due</button>`:'')+
@@ -1081,7 +1081,7 @@ function playExampleAudio(hash, btn){
 function exItemHTML(item, word){
   const s = (item && typeof item==='object') ? item.s : item;
   const a = (item && typeof item==='object') ? item.a : null;
-  const spk = a ? ` <button class="exsay" type="button" data-h="${esc(a)}" aria-label="Play example sentence">🔊</button>` : '';
+  const spk = a ? ` <button class="exsay" type="button" data-h="${esc(a)}" aria-label="Play example sentence"><i class="ic ic-audio-auto-play"></i></button>` : '';
   return `${escapeEmph(s,word)}${spk}`;
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }

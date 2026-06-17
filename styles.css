@@ -208,6 +208,7 @@ input{font:inherit}
   -webkit-tap-highlight-color:transparent}
 .exsay:active{transform:scale(.9)}
 .exsay.playing{color:var(--on-mint);border-color:var(--brand);background:#d7f1e6}
+[data-theme="tactile"] .say.playing,[data-theme="tactile"] .exsay.playing{background:rgba(216,107,62,.24);border-color:var(--brand)}
 .lod-link{font-size:13px}
 .lod-link:empty{display:none}
 .lod-link a{color:var(--brand2);font-weight:700;text-decoration:none;border-bottom:1px solid #3aa07f55;padding:2px 0}
@@ -637,6 +638,13 @@ input{font:inherit}
 .mem-review .ic,.mem-progress .ic{width:1.05em;height:1.05em}
 .field-label .ic{width:18px;height:18px}
 .lw-tag .ic,.set-label .ic{width:1em;height:1em}
+.say .ic{width:22px;height:22px}
+.exsay .ic{width:15px;height:15px}
+.done-emoji .ic{width:62px;height:62px;display:inline-block}
+.me-glyph .ic{width:48px;height:48px;display:inline-block}
+.tut-arrow .ic{width:44px;height:44px}
+.tut-inline{width:1em;height:1em;vertical-align:-.16em}
+.sh-counts .ic,.m-pages .ic,.m-types .ic{width:1em;height:1em;vertical-align:-.14em}
 .ic-arrow-down-no-idea{background-image:url(icons/light/arrow-down-no-idea.svg)}
 [data-theme="tactile"] .ic-arrow-down-no-idea{background-image:url(icons/dark/arrow-down-no-idea.svg)}
 .ic-arrow-left-dont-know{background-image:url(icons/light/arrow-left-dont-know.svg)}

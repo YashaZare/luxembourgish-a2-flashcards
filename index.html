@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
 <script>try{var _s=JSON.parse(localStorage.getItem('lux-fc-settings')||'{}');document.documentElement.setAttribute('data-theme',_s.theme||'clay');}catch(e){document.documentElement.setAttribute('data-theme','clay');}</script>
-<link rel="stylesheet" href="styles.css?v=47">
+<link rel="stylesheet" href="styles.css?v=48">
 </head>
 <body>
 <div id="app">
@@ -127,7 +127,7 @@
             <div class="face-mid">
               <div class="word" id="peekWord"></div>
               <div class="ipa" id="peekIpa"></div>
-              <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled>🔊</button>
+              <button class="say" id="peekSay" type="button" tabindex="-1" aria-hidden="true" hidden disabled><i class="ic ic-audio-auto-play"></i></button>
               <div class="base-form" id="peekBase"></div>
               <div class="listen-cue static" aria-hidden="true"><i class="ic ic-audio-listening-first"></i></div>
               <div class="front-meaning" id="peekMeaning" aria-hidden="true"></div>
@@ -145,7 +145,7 @@
             <div class="face-mid">
               <div class="word" id="frontWord"></div>
               <div class="ipa" id="frontIpa"></div>
-              <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
+              <button class="say" id="frontSay" type="button" aria-label="Play pronunciation" hidden><i class="ic ic-audio-auto-play"></i></button>
               <div class="base-form" id="frontBase"></div>
               <!-- listening-first: replaces the word; tap to (re)play, then tap the card to reveal -->
               <button class="listen-cue" id="listenCue" type="button" aria-label="Play pronunciation"><i class="ic ic-audio-listening-first"></i><span class="lc-t">tap to hear · then tap card to reveal</span></button>
@@ -166,7 +166,7 @@
               <div class="homo" id="backHomo"></div>
             </div>
             <div class="face-foot">
-              <button class="say" id="backSay" type="button" aria-label="Play pronunciation" hidden>🔊</button>
+              <button class="say" id="backSay" type="button" aria-label="Play pronunciation" hidden><i class="ic ic-audio-auto-play"></i></button>
               <div class="lod-link" id="backLod"></div>
               <div class="tap-hint">swipe to grade</div>
               <div class="meta footnote" id="backMeta"></div>
@@ -176,8 +176,8 @@
       </div>
       <!-- one-time-per-batch swipe tutorial -->
       <div class="tut hidden" id="tut">
-        <div class="tut-arrow l">←</div><div class="tut-arrow r">→</div>
-        <div class="tut-text">Swipe <b class="g">right if you know it</b> · <b class="r">left if you don't</b><br><span class="tut-sub">drop higher = easier · swipe ↑ for perfect</span></div>
+        <div class="tut-arrow l"><i class="ic ic-arrow-left-dont-know"></i></div><div class="tut-arrow r"><i class="ic ic-arrow-right-know"></i></div>
+        <div class="tut-text">Swipe <b class="g">right if you know it</b> · <b class="r">left if you don't</b><br><span class="tut-sub">drop higher = easier · swipe <i class="ic ic-arrow-up-perfect tut-inline"></i> for perfect</span></div>
       </div>
     </div>
 
@@ -243,7 +243,7 @@
   <!-- DONE SCREEN -->
   <section id="done" class="screen hidden">
     <div class="done-card">
-      <div class="done-emoji">🎉</div>
+      <div class="done-emoji"><i class="ic ic-win-solved"></i></div>
       <h2>Deck complete!</h2>
       <p id="doneStats"></p>
       <div class="done-btns">
@@ -281,8 +281,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=47"></script>
-<script src="progress.js?v=47"></script>
-<script src="app.js?v=47"></script>
+<script src="srs.js?v=48"></script>
+<script src="progress.js?v=48"></script>
+<script src="app.js?v=48"></script>
 </body>
 </html>
