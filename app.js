@@ -6,13 +6,13 @@ const $$ = s => [...document.querySelectorAll(s)];
 
 // Group the 23 source types into friendly toggles.
 const TYPE_GROUPS = [
-  { key: 'text',    label: '💬 Text & dialogue', types: ['dialogue','narration','explanation','example'] },
-  { key: 'q',       label: '❓ Questions & tasks', types: ['question','instruction'] },
-  { key: 'title',   label: '🔠 Titles & headings', types: ['title','subtitle','section-heading','topic-heading'] },
-  { key: 'illus',   label: '🖼️ Illustrations', types: ['illustration-text','label','caption'] },
-  { key: 'vocab',   label: '📋 Vocabulary lists', types: ['vocabulary','word-list-item'] },
-  { key: 'grammar', label: '📐 Grammar', types: ['grammar-term','grammar-example','table-cell','table-header'] },
-  { key: 'other',   label: '⋯ Other', types: ['footnote','page-number-word','answer-key','other'] },
+  { key: 'text',    icon: 'type-text',         label: 'Text & dialogue', types: ['dialogue','narration','explanation','example'] },
+  { key: 'q',       icon: 'type-question',     label: 'Questions & tasks', types: ['question','instruction'] },
+  { key: 'title',   icon: 'type-title',        label: 'Titles & headings', types: ['title','subtitle','section-heading','topic-heading'] },
+  { key: 'illus',   icon: 'type-illustration', label: 'Illustrations', types: ['illustration-text','label','caption'] },
+  { key: 'vocab',   icon: 'type-vocabulary',   label: 'Vocabulary lists', types: ['vocabulary','word-list-item'] },
+  { key: 'grammar', icon: 'type-grammar',      label: 'Grammar', types: ['grammar-term','grammar-example','table-cell','table-header'] },
+  { key: 'other',   icon: null,                label: '⋯ Other', types: ['footnote','page-number-word','answer-key','other'] },
 ];
 
 const state = {
@@ -82,7 +82,7 @@ function buildSetup(){
   TYPE_GROUPS.forEach(g=>{
     const has = g.types.filter(t=>present.has(t));
     if(!has.length) return;
-    const el = chip(g.label, true); el.dataset.group = g.key;
+    const el = chip(g.label, true, g.icon); el.dataset.group = g.key;
     el.onclick = ()=>{
       const on = el.classList.toggle('on'); el.setAttribute('aria-pressed', on);
       g.types.forEach(t=>{ if(present.has(t)){ on ? state.selTypes.add(t) : state.selTypes.delete(t); } });
@@ -135,8 +135,10 @@ function buildSetup(){
   syncGroupChips();
 }
 
-function chip(label, on){ const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':'');
-  b.textContent=label; b.setAttribute('aria-pressed', !!on); return b; }
+function chip(label, on, icon){ const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':'');
+  if(icon){ b.innerHTML=`<i class="ic ic-${icon}"></i>`; b.appendChild(document.createTextNode(label)); }
+  else b.textContent=label;
+  b.setAttribute('aria-pressed', !!on); return b; }
 
 // ---- theme ----
 function applyTheme(t){
@@ -461,7 +463,7 @@ function done(){
   $('#progBar').style.width='100%';
   let extra='';
   if(global_SRS()){ const t=SRS.store.totals();
-    extra = `<br><span class="done-mem">🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
+    extra = `<br><span class="done-mem"><i class="ic ic-memory"></i> <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
             (t.due?` · <i class="ic ic-due"></i> ${t.due} still due`:` · all reviews cleared ✓`)+`</span>`; }
   $('#doneStats').innerHTML = `You went through <b>${state.deck.length}</b> cards.<br>✓ ${got} got &nbsp; • &nbsp; ↻ ${miss} to review${extra}`;
   $('#reviewMissed').style.display = miss?'':'none';
@@ -775,8 +777,8 @@ function renderMemory(){
   const btn=$('#reviewDueBtn'), stats=$('#memStats');
   bar.hidden=false;                       // always visible now (carries the Progress entry point)
   if(stats) stats.innerHTML = t.seen===0
-    ? `🧠 <span class="mem-empty">Nothing studied yet</span>`
-    : `🧠 <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
+    ? `<i class="ic ic-memory"></i> <span class="mem-empty">Nothing studied yet</span>`
+    : `<i class="ic ic-memory"></i> <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
       (t.due?` · <span class="due">${t.due} due</span>`:``);
   if(btn){ btn.hidden = !t.due; $('#dueCount').textContent = t.due; }
 }
@@ -875,7 +877,7 @@ function viewTypes(P){
   return rows.map(({g,b})=>{
     const seg=(n,cls)=> n>0?`<span class="seg ${cls}" style="flex:${n}"></span>`:'';
     return `<button class="ty-row" data-group="${g.key}">`+
-      `<div class="ty-top"><span class="ty-name">${esc(g.label)}</span><span class="ty-pc">${pct(b.score)}% · ${b.seen}/${b.total}</span></div>`+
+      `<div class="ty-top"><span class="ty-name">${g.icon?`<i class="ic ic-${g.icon}"></i> `:''}${esc(g.label)}</span><span class="ty-pc">${pct(b.score)}% · ${b.seen}/${b.total}</span></div>`+
       `<div class="ty-bar">${seg(b.known,'k')}${seg(b.learning,'l')}${seg(b.new,'n')}</div></button>`;
   }).join('');
 }

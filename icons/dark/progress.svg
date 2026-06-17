@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <title>Progress</title>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.8 19.2h14.4" stroke="#F0E7D8" />
+    <path d="M6.4 19.2v-5.4a1.3 1.3 0 0 1 1.3-1.3h.8a1.3 1.3 0 0 1 1.3 1.3v5.4" stroke="#F0E7D8" />
+    <path d="M11 19.2V9.8a1.3 1.3 0 0 1 1.3-1.3h.8a1.3 1.3 0 0 1 1.3 1.3v9.4" stroke="#F0E7D8" />
+    <path d="M15.6 19.2V5.8a1.3 1.3 0 0 1 1.3-1.3h.8A1.3 1.3 0 0 1 19 5.8v13.4" stroke="#D86B3E" />
+  </g>
+</svg>

@@ -693,4 +693,28 @@ input{font:inherit}
 [data-theme="tactile"] .ic-win-solved{background-image:url(icons/dark/win-solved.svg)}
 .ic-word-types{background-image:url(icons/light/word-types.svg)}
 [data-theme="tactile"] .ic-word-types{background-image:url(icons/dark/word-types.svg)}
+.ic-progress{background-image:url(icons/light/progress.svg)}
+[data-theme="tactile"] .ic-progress{background-image:url(icons/dark/progress.svg)}
+.ic-memory{background-image:url(icons/light/memory.svg)}
+[data-theme="tactile"] .ic-memory{background-image:url(icons/dark/memory.svg)}
+.ic-type-text{background-image:url(icons/light/type-text.svg)}
+[data-theme="tactile"] .ic-type-text{background-image:url(icons/dark/type-text.svg)}
+.ic-type-question{background-image:url(icons/light/type-question.svg)}
+[data-theme="tactile"] .ic-type-question{background-image:url(icons/dark/type-question.svg)}
+.ic-type-title{background-image:url(icons/light/type-title.svg)}
+[data-theme="tactile"] .ic-type-title{background-image:url(icons/dark/type-title.svg)}
+.ic-type-illustration{background-image:url(icons/light/type-illustration.svg)}
+[data-theme="tactile"] .ic-type-illustration{background-image:url(icons/dark/type-illustration.svg)}
+.ic-type-vocabulary{background-image:url(icons/light/type-vocabulary.svg)}
+[data-theme="tactile"] .ic-type-vocabulary{background-image:url(icons/dark/type-vocabulary.svg)}
+.ic-type-grammar{background-image:url(icons/light/type-grammar.svg)}
+[data-theme="tactile"] .ic-type-grammar{background-image:url(icons/dark/type-grammar.svg)}
+/* sizing for the newly-iconed contexts */
+.chip .ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:3px}
+/* on a coloured "selected" chip, flatten the two-tone icon to one solid colour
+   matching the chip's text, so the accent element can't vanish into the fill */
+.chip.on .ic{filter:brightness(0)}                                  /* dark icon on the mint fill (clay) */
+[data-theme="tactile"] .chip.on .ic{filter:brightness(0) invert(1)} /* white icon on the orange fill (tactile) */
+.ty-name .ic{width:1.05em;height:1.05em;vertical-align:-.16em}
+.mem-stats .ic,.done-mem .ic{width:1.05em;height:1.05em;vertical-align:-.16em}
 .ms-stat .ic{width:16px;height:16px;vertical-align:-2px}
