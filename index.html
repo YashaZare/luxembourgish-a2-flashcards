@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#efece4">
+<meta name="theme-color" content="#252528">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Lëtzebuergesch">
@@ -12,8 +12,10 @@
 <link rel="icon" type="image/svg+xml" href="icons/light/brand-app.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Lëtzebuergesch Flashcards — A2</title>
-<script>try{var _s=JSON.parse(localStorage.getItem('lux-fc-settings')||'{}');document.documentElement.setAttribute('data-theme',_s.theme||'clay');}catch(e){document.documentElement.setAttribute('data-theme','clay');}</script>
-<link rel="stylesheet" href="styles.css?v=49">
+<script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
+if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
+document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
+<link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body>
 <div id="app">
@@ -281,8 +283,8 @@
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=49"></script>
-<script src="progress.js?v=49"></script>
-<script src="app.js?v=49"></script>
+<script src="srs.js?v=50"></script>
+<script src="progress.js?v=50"></script>
+<script src="app.js?v=50"></script>
 </body>
 </html>

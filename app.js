@@ -24,7 +24,7 @@ const state = {
   results: {}, // word -> 'got' | 'miss'
   audioMode: 1, // audio mode: 0 = silent (tap to play) · 1 = auto-play · 2 = listening-first
   reverse: false, // reverse direction: meaning → Lëtzebuergesch
-  theme: 'clay', // visual theme: 'clay' | 'tactile'
+  theme: 'tactile', // visual theme: 'tactile' (default) | 'clay'
 };
 
 // friendly labels for the occurrence types shown on a card
