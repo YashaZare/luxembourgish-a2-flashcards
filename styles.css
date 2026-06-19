@@ -486,6 +486,8 @@ input{font:inherit}
 .game-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:4px solid var(--brand);box-shadow:0 2px 7px rgba(96,92,80,.28);cursor:grab}
 .game-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid var(--brand)}
 .gc-best{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+.gc-due{font-size:12px;color:var(--brand2);margin-top:6px;text-align:center;font-weight:700}
+.gc-due .ic{width:1em;height:1em;vertical-align:-.14em}
 .mode-card.game .primary{width:100%;margin-top:6px}
 
 /* ============================ MATCH GAME ============================ */
@@ -549,7 +551,9 @@ input{font:inherit}
 .game-result.show .gr-card{transform:scale(1)}
 .gr-emoji{font-size:48px}
 .gr-title{font-size:22px;font-weight:800;color:var(--ink);margin:6px 0}
-.gr-time{font-size:17px;color:var(--brand2);font-weight:700;margin-bottom:18px}
+.gr-time{font-size:17px;color:var(--brand2);font-weight:700;margin-bottom:10px}
+.gr-review{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:18px}
+.gr-review .ic{width:1em;height:1em;vertical-align:-.14em}
 .gr-best{color:#d6ab48;font-weight:800;font-size:14px}
 .gr-btns{display:flex;flex-direction:column;gap:10px}
 

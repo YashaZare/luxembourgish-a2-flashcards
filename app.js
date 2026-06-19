@@ -763,6 +763,28 @@ function updateGameBest(){
   const n=+slider.value; if($('#gameCountVal')) $('#gameCountVal').textContent=n;
   const best=+localStorage.getItem('lb_match_best_'+n)||0;
   if($('#gameBest')) $('#gameBest').textContent = best ? `Best: ${best.toFixed(1)}s` : 'No best time yet';
+  const dueEl=$('#gameDue');
+  if(dueEl){
+    let due=0;
+    if(global_SRS()){ const lang=[...state.selLangs][0]||'en', now=Date.now();
+      due=(state.gamePool||[]).reduce((m,c)=>{ if(!firstTr(c,lang)) return m; const k=SRS.store.get(c.w); return m+(k&&k.due<=now?1:0); },0); }
+    dueEl.innerHTML = due ? `<i class="ic ic-due"></i> ${due} word${due>1?'s':''} due — this board reviews them first` : '';
+  }
+}
+// Seed the board like a real review session: most-overdue words first, then unseen
+// (new words to learn), then not-yet-due (already strong). Take a board's worth and
+// shuffle only the final selection, so the *contents* are FSRS-prioritised but the
+// *layout* is random. This is what turns "play a game" into "do your reviews".
+function seedReviewPool(pool, pairs){
+  const now=Date.now(), S=global_SRS();
+  const scored = pool.map(c=>{
+    const card = S ? SRS.store.get(c.w) : null;
+    if(card && card.due<=now) return {c, bucket:0, key:card.due};      // due → most overdue first
+    if(!card)                 return {c, bucket:1, key:Math.random()}; // unseen → learn new
+    return {c, bucket:2, key:card.due};                                // not due → lowest priority
+  });
+  scored.sort((a,b)=> a.bucket-b.bucket || a.key-b.key);
+  return shuffle(scored.slice(0, Math.min(pairs, scored.length)).map(x=>x.c));
 }
 function startGame(){
   ensureCtx();
@@ -770,13 +792,14 @@ function startGame(){
   const pairs = Math.floor(n/2);
   const lang = [...state.selLangs][0] || 'en';
   let pool = (state.gamePool||[]).filter(c=> firstTr(c,lang));
-  pool = shuffle(pool).slice(0, Math.min(pairs, pool.length));
+  pool = seedReviewPool(pool, pairs);
   if(pool.length < 2){ return; }
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');                                  // stops any prior game timer
   const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
   state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
+    reviewed:0, newWords:0,
     budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
   // time-attack: bar shows progress (fills as you match) + a live clock, no losing
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
@@ -811,14 +834,22 @@ function onTileTap(t,b){
     t.matched=true; g.sel.matched=true;
     bb.classList.add('matched'); a.classList.add('matched');
     bb.classList.remove('sel'); a.classList.remove('sel');
+    const struggled = !!(t._struggled || g.sel._struggled);
     g.matched++; g.streak=(g.streak||0)+1; g.sel=null; g.selEl=null;
     const hard = card ? wordIsHard(card.w) : false;
+    // the match IS a review: grade it back to FSRS (clean → Good, fumbled → Hard)
+    if(global_SRS() && card){
+      const had = !!SRS.store.get(card.w);
+      SRS.store.grade(card.w, struggled ? SRS.GRADE.HARD : SRS.GRADE.GOOD);
+      g.reviewed++; if(!had) g.newWords++;
+    }
     gameFx(a, bb, g.streak, hard);                     // particle burst + combo pop
     if(card){ try{ playAudio(card); }catch(e){} }      // speak the cleared word (dual coding)
     if(g.matched>=g.pairs){ winGame(); }
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
   } else {                                             // wrong → flash both, deselect; streak breaks
-    g.streak=0; SFX.fail();
+    g.streak=0; g.sel._struggled=true; t._struggled=true;   // remember the fumble → grades these Hard
+    SFX.fail();
     const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
     g.sel=null; g.selEl=null;
     setTimeout(()=>{ a.classList.remove('wrong'); bb.classList.remove('wrong'); }, 480);
@@ -851,17 +882,23 @@ function winGame(){
   const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
+  endReviewSession();
   finaleSound();                                   // rising "Sproochcrush" arpeggio
   praiseBanner('Sproochcrush!', true);
   setTimeout(()=>{ SFX.win(); showGameResult(true, elapsed, isBest); }, 480);  // let the flourish land first
 }
 function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
+  endReviewSession();
   const bar=$('#gameBar'); if(bar) bar.style.width='0%'; SFX.lose(); showGameResult(false, g.matched); }
+// a finished game is a finished review session — recompute mastery/progress
+function endReviewSession(){ if(window.Progress) Progress.invalidate(); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
+  const rev = g.reviewed ? `<div class="gr-review"><i class="ic ic-due"></i> ${g.reviewed} word${g.reviewed>1?'s':''} reviewed${g.newWords?` · ${g.newWords} new`:''}</div>` : '';
   el.innerHTML = `<div class="gr-card">${won?'<div class="gr-kicker">Sproochcrush!</div>':''}<div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
+    rev+
     `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
     `<button class="ghost" id="gameQuit">Back</button></div></div>`;
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
