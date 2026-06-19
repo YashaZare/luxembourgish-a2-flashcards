@@ -556,6 +556,52 @@ input{font:inherit}
 .gr-review .ic{width:1em;height:1em;vertical-align:-.14em}
 .gr-best{color:#d6ab48;font-weight:800;font-size:14px}
 .gr-btns{display:flex;flex-direction:column;gap:10px}
+.gr-stars{display:flex;justify-content:center;gap:8px;margin:2px 0 8px}
+.gr-star{font-size:30px;color:var(--line)}
+.gr-star.on{color:#f2b736;text-shadow:0 2px 6px rgba(242,183,54,.5)}
+
+/* ============================ ADVENTURE ============================ */
+.adventure-btn{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 18px;padding:17px 18px;border-radius:20px;
+  background:linear-gradient(135deg,#8fd9bb,#5fc39d);color:var(--on-mint);box-shadow:0 8px 22px rgba(99,184,148,.4);text-align:left;border:none;cursor:pointer}
+.adventure-btn .ic{width:32px;height:32px;flex:none;filter:brightness(0) invert(1)}
+.adventure-btn .adv-txt{flex:1;display:flex;flex-direction:column;line-height:1.18;min-width:0}
+.adventure-btn .adv-txt b{font-size:21px;font-weight:900}
+.adventure-btn .adv-txt small{font-size:11.5px;opacity:.92;font-weight:600;margin-top:2px}
+.adventure-btn .adv-go{font-size:23px;font-weight:800;opacity:.9}
+.adventure-btn:active{transform:scale(.985)}
+
+.map-head{align-items:center;gap:12px}
+.map-progress{margin-left:auto;font-weight:800;color:var(--brand2);font-size:15px;display:flex;align-items:center;gap:5px}
+.map-progress .ic{width:18px;height:18px}
+.map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px}
+.map-track::before{content:"";position:absolute;left:50%;top:8px;bottom:34px;width:0;border-left:4px dashed var(--line);transform:translateX(-50%);z-index:0}
+.map-chapter{position:relative;z-index:2;text-align:center;margin:30px auto 14px;max-width:340px;background:var(--bg);padding:8px 8px;border-radius:14px}
+.mc-eyebrow{font-size:11px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--brand2)}
+.mc-name{font-size:19px;font-weight:900;color:var(--ink);line-height:1.15;margin-top:2px}
+.mc-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.map-chapter.done .mc-name{color:var(--brand2)}
+.map-node{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:130px;margin:12px auto;background:none;border:none;cursor:pointer;padding:0}
+.map-node.left{transform:translateX(-66px)}
+.map-node.right{transform:translateX(66px)}
+.map-node.ahead{opacity:.55}
+.mn-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:3px solid #ffffffcc;box-shadow:0 5px 14px rgba(60,55,45,.22)}
+.mn-num{font-size:20px;font-weight:900;color:var(--ink)}
+.mn-done{font-size:26px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.map-node.current .mn-circle{width:74px;height:74px;animation:nodePulse 1.7s ease-in-out infinite}
+@keyframes nodePulse{0%,100%{box-shadow:0 0 0 0 rgba(99,184,148,.55)}60%{box-shadow:0 0 0 12px rgba(99,184,148,0)}}
+.mn-stars{display:flex;gap:2px;margin-top:6px}
+.mn-star{font-size:12px;color:var(--line)}
+.mn-star.on{color:#f2b736}
+.mn-cap{font-size:10px;color:var(--muted);margin-top:3px;text-align:center;max-width:118px}
+.mn-here{font-size:9.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--brand2);margin-top:3px}
+
+/* ---- Adventure: Tactile Dark overrides ---- */
+[data-theme="tactile"] .adventure-btn{background:linear-gradient(135deg,#ef9048,#d56a22);color:#fff;box-shadow:0 8px 22px #0008, inset 0 1px 0 #ffb37a}
+[data-theme="tactile"] .map-track::before{border-left-color:#ffffff1f}
+[data-theme="tactile"] .mn-circle{border-color:#ffffff22;box-shadow:0 5px 14px #0008}
+[data-theme="tactile"] .map-node.current .mn-circle{animation:nodePulseT 1.7s ease-in-out infinite}
+@keyframes nodePulseT{0%,100%{box-shadow:0 0 0 0 rgba(216,107,62,.6)}60%{box-shadow:0 0 0 12px rgba(216,107,62,0)}}
 
 /* ---- theme picker (setup) ---- */
 .theme-opts{display:flex;gap:10px}

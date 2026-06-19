@@ -644,7 +644,7 @@ function wireStudy(){
 }
 
 // ---- helpers ----
-const SCREENS=['setup','choose','game','study','done','monitor'];
+const SCREENS=['setup','choose','game','study','done','monitor','map'];
 function show(id){
   if(id!=='game') stopGame();          // leaving the game stops its timer
   SCREENS.forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
@@ -654,6 +654,7 @@ function show(id){
   if(id==='setup') renderMemory();
   if(id==='monitor') renderMonitor();
   if(id==='choose') updateGameBest();
+  if(id==='map') renderMap();
 }
 
 // ============================ MATCH GAME ============================
@@ -799,7 +800,7 @@ function startGame(){
   show('game');                                  // stops any prior game timer
   const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
   state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0,
+    reviewed:0, newWords:0, fumbles:0, node:null,
     budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
   // time-attack: bar shows progress (fills as you match) + a live clock, no losing
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
@@ -848,7 +849,7 @@ function onTileTap(t,b){
     if(g.matched>=g.pairs){ winGame(); }
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
   } else {                                             // wrong → flash both, deselect; streak breaks
-    g.streak=0; g.sel._struggled=true; t._struggled=true;   // remember the fumble → grades these Hard
+    g.streak=0; g.fumbles=(g.fumbles||0)+1; g.sel._struggled=true; t._struggled=true;   // fumble → grades these Hard, costs stars
     SFX.fail();
     const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
     g.sel=null; g.selEl=null;
@@ -882,6 +883,12 @@ function winGame(){
   const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
+  // adventure node: award stars (1=cleared, 2=flawless, 3=flawless+fast) and keep the best
+  if(g.node!=null){
+    const earned = (g.fumbles>0) ? 1 : (elapsed<=g.par ? 3 : 2);
+    const stars=loadStars(); g.starsPrev=stars[g.node]||0; g.starsEarned=earned;
+    if(earned>g.starsPrev){ stars[g.node]=earned; saveStars(stars); }
+  }
   endReviewSession();
   finaleSound();                                   // rising "Sproochcrush" arpeggio
   praiseBanner('Sproochcrush!', true);
@@ -895,6 +902,21 @@ function endReviewSession(){ if(window.Progress) Progress.invalidate(); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
   const rev = g.reviewed ? `<div class="gr-review"><i class="ic ic-due"></i> ${g.reviewed} word${g.reviewed>1?'s':''} reviewed${g.newWords?` · ${g.newWords} new`:''}</div>` : '';
+  if(g.node!=null && won){                              // adventure-node result: stars + map nav
+    const e=g.starsEarned||1, adv=buildMap(), hasNext=g.node+1<adv.nodes.length;
+    const starsHtml=[0,1,2].map(k=>`<span class="gr-star${k<e?' on':''}">★</span>`).join('');
+    const blurb = e===3?'Perfekt! Allebot Wuert flott gemaach.' : e===2?'Flott — keng Feeler!' : 'Etapp fäerdeg!';
+    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">Sproochcrush!</div>`+
+      `<div class="gr-stars">${starsHtml}</div>`+
+      `<div class="gr-title">Etapp ${g.node+1} fäerdeg!</div>`+
+      `<div class="gr-time">${blurb}</div>`+ rev+
+      `<div class="gr-btns"><button class="primary" id="gameNext"${hasNext?'':' disabled'}>Nächst Etapp →</button>`+
+      `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
+    el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+    $('#gameNext').onclick=()=>{ el.classList.remove('show'); el.hidden=true; if(hasNext) startNodeGame(g.node+1); };
+    $('#gameMap').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('map'); };
+    return;
+  }
   el.innerHTML = `<div class="gr-card">${won?'<div class="gr-kicker">Sproochcrush!</div>':''}<div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
@@ -904,6 +926,115 @@ function showGameResult(won, val, isBest){
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
   $('#gameAgain').onclick=()=>{ el.classList.remove('show'); el.hidden=true; startGame(); };
   $('#gameQuit').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('choose'); };
+}
+
+// ============================ ADVENTURE MAP ============================
+// The book IS the map: chapters (Kapitelen) are worlds, and each "Etapp" (node) is a
+// board-sized cluster of consecutive book words. Playing a node is the same juicy,
+// FSRS-grading match round — so climbing the path = doing your spaced reviews.
+const NODE_TARGET = 20;          // ~words per node (tunable)
+const PAR_PER_PAIR = 2.8;        // seconds/pair under which a flawless run earns the 3rd star
+const STARS_KEY = 'lb_map_stars_v1';
+function loadStars(){ try{ return JSON.parse(localStorage.getItem(STARS_KEY))||{}; }catch(e){ return {}; } }
+function saveStars(s){ try{ localStorage.setItem(STARS_KEY, JSON.stringify(s)); }catch(e){} }
+
+// Build the node list once (cached on the dataset). Each distinct word lands in the node of
+// its earliest book page; nodes are chunked to ~NODE_TARGET words and never cross a chapter.
+function buildMap(){
+  const d=state.data; if(d._adv) return d._adv;
+  const lr=d.lessonRanges||[];
+  const p2l={}; lr.forEach((r,i)=>{ for(let p=r[0];p<=r[1];p++) if(p2l[p]==null) p2l[p]=i; });
+  const seen=new Map();
+  for(const c of d.cards){
+    if(!c.w) continue;
+    let mn=Infinity; for(const p of (c.pg||[])) if(p<mn) mn=p; if(mn===Infinity) mn=d.pageMin;
+    const prev=seen.get(c.w);
+    if(!prev || mn<prev.page) seen.set(c.w, {w:c.w, card:c, page:mn});
+  }
+  const words=[...seen.values()].sort((a,b)=> a.page-b.page || a.w.localeCompare(b.w));
+  const SKIP=/front matter|^index$|impressum|transkriptioun/i;   // not learning chapters
+  const nodes=[]; let cur=null;
+  for(const it of words){
+    const li = p2l[it.page]!=null ? p2l[it.page] : (lr.length-1);
+    if(SKIP.test((lr[li]&&lr[li][2])||'')) continue;            // skip TOC / imprint / transcripts
+    if(!cur || cur.lesson!==li || cur.words.length>=NODE_TARGET){ cur={lesson:li,words:[],a:it.page,b:it.page}; nodes.push(cur); }
+    cur.words.push(it); if(it.page<cur.a)cur.a=it.page; if(it.page>cur.b)cur.b=it.page;
+  }
+  for(let i=nodes.length-1;i>0;i--){                    // fold a tiny trailing node into its neighbour
+    if(nodes[i].words.length<6 && nodes[i-1].lesson===nodes[i].lesson){
+      nodes[i-1].words.push(...nodes[i].words); nodes[i-1].b=Math.max(nodes[i-1].b,nodes[i].b); nodes.splice(i,1);
+    }
+  }
+  nodes.forEach((n,i)=>n.idx=i);
+  d._adv={ nodes, lessons:lr };
+  return d._adv;
+}
+// per-node mastery, reusing the heatmap's colour buckets
+function nodeState(n){
+  const now=Date.now(); let sum=0, seen=0, due=0; const total=n.words.length;
+  for(const it of n.words){
+    const card= global_SRS()? SRS.store.get(it.w):null;
+    if(card){ seen++; sum+=(Progress.masteryOf(card, now)||0); if(card.due<=now) due++; }
+  }
+  const score= total? sum/total : 0, coverage= total? seen/total : 0;
+  return { score, coverage, seen, total, due, bucket:Progress.bucketOf({total, coverage, score, confident: total>=4}) };
+}
+function chapterParts(name){
+  const parts=(name||'').split('—');
+  if(parts.length>1) return { eyebrow:parts[0].trim(), title:parts.slice(1).join('—').trim() };
+  return { eyebrow:'', title:(name||'').trim() };
+}
+function renderMap(){
+  const track=$('#mapTrack'); if(!track) return;
+  const adv=buildMap(), stars=loadStars();
+  const states=adv.nodes.map(nodeState);
+  let curIdx=adv.nodes.findIndex(n=>!(stars[n.idx]>0)); if(curIdx<0) curIdx=adv.nodes.length-1;   // first un-cleared node
+  // header progress: stars earned / total
+  const totalStars=adv.nodes.length*3, gotStars=adv.nodes.reduce((m,n)=>m+(stars[n.idx]||0),0);
+  const hdr=$('#mapProgress'); if(hdr) hdr.innerHTML=`<i class="ic ic-win-solved"></i> ${gotStars}/${totalStars}`;
+  let html='', lastLesson=-1;
+  adv.nodes.forEach((n,i)=>{
+    if(n.lesson!==lastLesson){
+      lastLesson=n.lesson;
+      const ln=adv.lessons[n.lesson], cp=chapterParts(ln?ln[2]:'');
+      const lessonNodes=adv.nodes.filter(x=>x.lesson===n.lesson);
+      const done=lessonNodes.every(x=>states[x.idx].bucket==='mastered');
+      const a=ln?ln[0]:n.a, b=ln?ln[1]:n.b;
+      html+=`<div class="map-chapter${done?' done':''}">`+
+        (cp.eyebrow?`<div class="mc-eyebrow">${esc(cp.eyebrow)}${done?' · ★':''}</div>`:'')+
+        `<div class="mc-name">${esc(cp.title)}</div>`+
+        `<div class="mc-sub">Säiten ${a}–${b} · ${lessonNodes.length} Etappen</div>`+
+      `</div>`;
+    }
+    const st=states[i], side=i%2?'right':'left', earned=stars[n.idx]||0, cur=i===curIdx;
+    const ahead = i>curIdx && st.bucket==='unseen';
+    html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
+      `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${i+1}</span>`}</span>`+
+      `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
+      `<span class="mn-cap">Säit ${n.a===n.b?n.a:n.a+'–'+n.b}${st.due?` · ${st.due} fälleg`:''}</span>`+
+      (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
+    `</button>`;
+  });
+  track.innerHTML=html;
+  $$('#mapTrack .map-node').forEach(b=> b.onclick=()=>startNodeGame(+b.dataset.node));
+  const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
+}
+function startNodeGame(idx){
+  ensureCtx();
+  const adv=buildMap(), n=adv.nodes[idx]; if(!n) return;
+  const lang=[...state.selLangs][0]||'en';
+  const cards=n.words.map(it=>it.card).filter(c=>firstTr(c,lang));
+  const pool=seedReviewPool(cards, cards.length);       // all node words, due-first ordering
+  if(pool.length<2){ return; }
+  const tiles=[];
+  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
+  show('game');
+  state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
+    reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR,
+    budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
+  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; }
+  renderGameGrid(); startGameTimer();
 }
 
 // ---- spaced repetition: memory summary + "review due" ----
@@ -1307,7 +1438,9 @@ function wireGame(){
   if($('#playGame')) $('#playGame').onclick = startGame;
   if($('#gameCount')) $('#gameCount').oninput = updateGameBest;
   if($('#chooseBack')) $('#chooseBack').onclick = ()=>show('setup');
-  if($('#gameBack')) $('#gameBack').onclick = ()=>show('choose');
+  if($('#gameBack')) $('#gameBack').onclick = ()=> show(state.game && state.game.node!=null ? 'map' : 'choose');
+  if($('#advBtn')) $('#advBtn').onclick = ()=>show('map');
+  if($('#mapBack')) $('#mapBack').onclick = ()=>show('setup');
   $$('.gc-mode').forEach(b=> b.onclick = ()=>{ setGameMode(b.dataset.gmode); persist(); });
   reflectGameMode();
 }

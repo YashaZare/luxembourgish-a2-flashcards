@@ -15,12 +15,17 @@
 <script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
 if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
 document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
-<link rel="stylesheet" href="styles.css?v=54">
+<link rel="stylesheet" href="styles.css?v=55">
 </head>
 <body>
 <div id="app">
   <!-- SETUP SCREEN -->
   <section id="setup" class="screen">
+    <button class="adventure-btn" id="advBtn" type="button">
+      <i class="ic ic-match-game"></i>
+      <span class="adv-txt"><b>Adventure</b><small>Spill duerch d'Buch — léier andeems de spills</small></span>
+      <span class="adv-go">→</span>
+    </button>
     <header class="app-head">
       <h1>Lëtzebuergesch <span>Flashcards</span></h1>
       <p class="sub">Schwätzt Dir Lëtzebuergesch? <b>A2</b></p>
@@ -249,6 +254,16 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
     <div class="game-result" id="gameResult" hidden></div>
   </section>
 
+  <!-- ADVENTURE MAP -->
+  <section id="map" class="screen hidden">
+    <header class="study-head map-head">
+      <button class="icon-btn" id="mapBack" aria-label="Back to home"><i class="ic ic-back-previous"></i></button>
+      <h2 class="choose-h">Adventure</h2>
+      <div class="map-progress" id="mapProgress"></div>
+    </header>
+    <div class="map-track" id="mapTrack"></div>
+  </section>
+
   <!-- DONE SCREEN -->
   <section id="done" class="screen hidden">
     <div class="done-card">
@@ -290,8 +305,8 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=54"></script>
-<script src="progress.js?v=54"></script>
-<script src="app.js?v=54"></script>
+<script src="srs.js?v=55"></script>
+<script src="progress.js?v=55"></script>
+<script src="app.js?v=55"></script>
 </body>
 </html>
