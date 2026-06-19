@@ -506,8 +506,26 @@ input{font:inherit}
 .game-tile:active{transform:scale(.95)}
 .game-tile.sel{background:var(--brand);color:var(--on-mint);border-color:var(--brand);box-shadow:0 4px 12px rgba(99,184,148,.4)}
 .game-tile.wrong{background:#f6d3d1;border-color:var(--warn);color:var(--warn-deep);animation:shake .26s}
-.game-tile.matched{opacity:0;pointer-events:none;transform:scale(.84)}
+.game-tile.matched{pointer-events:none;z-index:3;animation:tileMatch .34s cubic-bezier(.34,1.56,.64,1) forwards}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes tileMatch{0%{transform:scale(1)}38%{transform:scale(1.16);filter:brightness(1.35)}100%{transform:scale(.42);opacity:0}}
+
+/* ---- juice layer: particles, combo pops, praise banner ---- */
+.fx-layer{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:6}
+.fx-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--brand);
+  transform:translate(-50%,-50%);box-shadow:0 0 6px var(--brand);animation:fxDot .6s ease-out forwards}
+.fx-dot.hard{background:#ffce54;box-shadow:0 0 8px #ffce54}
+@keyframes fxDot{to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.25);opacity:0}}
+.fx-pop{position:absolute;transform:translate(-50%,-50%);font-weight:800;font-size:18px;color:var(--brand2);
+  white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.3);animation:fxPop .8s ease-out forwards}
+.fx-pop.hard{color:#f0a93c}
+@keyframes fxPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}22%{opacity:1}100%{opacity:0;transform:translate(-50%,-185%) scale(1.1)}}
+.fx-praise{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-weight:900;font-size:34px;
+  color:var(--brand2);letter-spacing:.5px;text-shadow:0 2px 10px rgba(0,0,0,.32);animation:fxPraise 1s ease-out forwards}
+.fx-praise.big{font-size:46px;color:#f0a93c}
+@keyframes fxPraise{0%{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(-6deg)}24%{opacity:1;transform:translate(-50%,-50%) scale(1.14) rotate(-2deg)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-120%) scale(1)}}
+.gr-kicker{font-weight:900;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand2);margin-bottom:2px}
+[data-theme="tactile"] .fx-dot{box-shadow:0 0 9px var(--brand)}
 /* tile text size is computed per cell in JS (--tile-fs); tighten radius/padding as tiles shrink */
 .game-grid[data-cols="4"] .game-tile{border-radius:12px}
 .game-grid[data-cols="5"] .game-tile{border-radius:10px;padding:3px}

@@ -672,14 +672,60 @@ function beep(freqs, opt){
     osc.connect(g).connect(ctx.destination); osc.start(s); osc.stop(s+dur+0.03);
   });
 }
+// Tactile Dark gets a slightly brighter timbre; Soft Clay stays mellow.
+function gameOsc(){ return state.theme==='tactile' ? 'triangle' : 'sine'; }
 const SFX={
   select:   ()=>beep(680,            {type:'triangle', dur:0.07, vol:0.13}),
   unselect: ()=>beep(380,            {type:'triangle', dur:0.07, vol:0.09}),
   match:    ()=>beep([620,930],      {type:'sine',     dur:0.12, gap:0.07, vol:0.16}),
-  fail:     ()=>beep(180,            {type:'square',   dur:0.16, vol:0.09, bend:0.7}),
+  fail:     ()=>beep([330,247],      {type:'sine',     dur:0.16, gap:0.10, vol:0.07}),  // gentle "uh", never a buzzer
   win:      ()=>beep([523,659,784,1047],{type:'sine',  dur:0.16, gap:0.11, vol:0.18}),
-  lose:     ()=>beep([392,311,247],  {type:'sine',     dur:0.24, gap:0.16, vol:0.16})
+  lose:     ()=>beep([392,311,247],  {type:'sine',     dur:0.24, gap:0.16, vol:0.14})
 };
+// Rising-pitch "learning streak" stairs: each consecutive correct pair lifts the
+// match-pop one semitone (cycling ~an octave). FSRS-hard words get a brighter, fuller pop.
+function gameMatchSound(streak, hard){
+  const k = Math.pow(2, ((Math.max(1,streak)-1)%13)/12);
+  const notes = hard ? [620*k, 930*k, 1240*k] : [620*k, 930*k];
+  beep(notes, {type:gameOsc(), dur:0.13, gap:0.055, vol: hard?0.2:0.15});
+}
+// "Sproochcrush" round-end flourish — a quick rising arpeggio.
+function finaleSound(){
+  beep([523,587,659,784,880,1047,1175,1319], {type:gameOsc(), dur:0.12, gap:0.075, vol:0.18});
+}
+// Was this word hard to recall (per FSRS)? Overdue / low-stability / lapsed → a "Divine"-worthy win.
+function wordIsHard(word){
+  if(!window.SRS) return false;
+  const c = SRS.store.get(word); if(!c) return false;              // unseen → neutral
+  return c.due <= Date.now() || SRS.intervalDays(c.s) < 7 || (c.lapses||0) >= 2;
+}
+// Luxembourgish praise ladder — fires only when a streak crosses a tier (passive vocab too).
+const GAME_PRAISE = [[3,'Gutt!'],[5,'Flott!'],[7,'Super!'],[10,'Wonnerbar!'],[14,'Iwwerdeeglech!']];
+function praiseFor(streak){ for(let i=GAME_PRAISE.length-1;i>=0;i--){ if(streak===GAME_PRAISE[i][0]) return GAME_PRAISE[i][1]; } return null; }
+// ---- juice: particle burst, score/combo pop, praise banner (themed via CSS tokens) ----
+function gameFx(a, bb, streak, hard){
+  const host=$('#game'), fx=$('#fxLayer'); if(!host||!fx) return;
+  const h=host.getBoundingClientRect(), r1=a.getBoundingClientRect(), r2=bb.getBoundingClientRect();
+  const x=((r1.left+r1.right+r2.left+r2.right)/4)-h.left;
+  const y=((r1.top+r1.bottom+r2.top+r2.bottom)/4)-h.top;
+  const n = hard?14:8;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('span'); d.className='fx-dot'+(hard?' hard':'');
+    const ang=Math.random()*6.283, dist=18+Math.random()*(hard?48:30);
+    d.style.left=x+'px'; d.style.top=y+'px';
+    d.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(0)+'px');
+    d.style.setProperty('--dy',(Math.sin(ang)*dist).toFixed(0)+'px');
+    d.style.animationDelay=(Math.random()*40|0)+'ms';
+    fx.appendChild(d); d.addEventListener('animationend',()=>d.remove());
+  }
+  if(streak>=2){ const p=document.createElement('div'); p.className='fx-pop'+(hard?' hard':''); p.textContent='×'+streak;
+    p.style.left=x+'px'; p.style.top=y+'px'; fx.appendChild(p); p.addEventListener('animationend',()=>p.remove()); }
+}
+function praiseBanner(txt, big){
+  const fx=$('#fxLayer'); if(!fx) return;
+  const b=document.createElement('div'); b.className='fx-praise'+(big?' big':''); b.textContent=txt;
+  fx.appendChild(b); b.addEventListener('animationend',()=>b.remove());
+}
 // Pick a column count that EXACTLY divides the tile count (so every row is full —
 // no half-empty last row) and best matches the container's shape: few columns on a
 // tall phone, many on a wide desktop. Returns {cols, rows}.
@@ -727,10 +773,10 @@ function startGame(){
   pool = shuffle(pool).slice(0, Math.min(pairs, pool.length));
   if(pool.length < 2){ return; }
   const tiles=[];
-  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w}); tiles.push({id:i,kind:'t',text:firstTr(c,lang)}); });
+  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');                                  // stops any prior game timer
   const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
-  state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length,
+  state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
     budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
   // time-attack: bar shows progress (fills as you match) + a live clock, no losing
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
@@ -761,13 +807,18 @@ function onTileTap(t,b){
   if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); return; }
   if(g.sel===t){ b.classList.remove('sel'); g.sel=null; g.selEl=null; SFX.unselect(); return; }
   if(g.sel.id===t.id && g.sel.kind!==t.kind){          // a correct pair
+    const a=g.selEl, bb=b, card=t.card||g.sel.card;
     t.matched=true; g.sel.matched=true;
-    b.classList.add('matched'); g.selEl.classList.add('matched');
-    b.classList.remove('sel'); g.selEl.classList.remove('sel');
-    g.matched++; g.sel=null; g.selEl=null;
-    if(g.matched>=g.pairs) winGame(); else SFX.match();
-  } else {                                             // wrong → flash both, deselect
-    SFX.fail();
+    bb.classList.add('matched'); a.classList.add('matched');
+    bb.classList.remove('sel'); a.classList.remove('sel');
+    g.matched++; g.streak=(g.streak||0)+1; g.sel=null; g.selEl=null;
+    const hard = card ? wordIsHard(card.w) : false;
+    gameFx(a, bb, g.streak, hard);                     // particle burst + combo pop
+    if(card){ try{ playAudio(card); }catch(e){} }      // speak the cleared word (dual coding)
+    if(g.matched>=g.pairs){ winGame(); }
+    else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
+  } else {                                             // wrong → flash both, deselect; streak breaks
+    g.streak=0; SFX.fail();
     const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
     g.sel=null; g.selEl=null;
     setTimeout(()=>{ a.classList.remove('wrong'); bb.classList.remove('wrong'); }, 480);
@@ -800,14 +851,15 @@ function winGame(){
   const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
-  SFX.win();
-  showGameResult(true, elapsed, isBest);
+  finaleSound();                                   // rising "Sproochcrush" arpeggio
+  praiseBanner('Sproochcrush!', true);
+  setTimeout(()=>{ SFX.win(); showGameResult(true, elapsed, isBest); }, 480);  // let the flourish land first
 }
 function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
   const bar=$('#gameBar'); if(bar) bar.style.width='0%'; SFX.lose(); showGameResult(false, g.matched); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
-  el.innerHTML = `<div class="gr-card"><div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
+  el.innerHTML = `<div class="gr-card">${won?'<div class="gr-kicker">Sproochcrush!</div>':''}<div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
     `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
