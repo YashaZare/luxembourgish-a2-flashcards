@@ -680,7 +680,37 @@ const SFX={
   win:      ()=>beep([523,659,784,1047],{type:'sine',  dur:0.16, gap:0.11, vol:0.18}),
   lose:     ()=>beep([392,311,247],  {type:'sine',     dur:0.24, gap:0.16, vol:0.16})
 };
-function gameCols(n){ return n<=10?2 : n<=20?3 : n<=30?4 : 5; }   // tiles → columns
+// Pick a column count that EXACTLY divides the tile count (so every row is full —
+// no half-empty last row) and best matches the container's shape: few columns on a
+// tall phone, many on a wide desktop. Returns {cols, rows}.
+function gridDims(n){
+  const grid=$('#gameGrid');
+  const W = (grid&&grid.clientWidth)  || Math.min(window.innerWidth,560);
+  const H = (grid&&grid.clientHeight) || Math.round(window.innerHeight*0.7);
+  const aspect = W/Math.max(H,1);
+  const maxCols = Math.max(2, Math.floor(W/70));   // keep tiles tappable (≥~70px wide)
+  const ideal = Math.sqrt(n*Math.max(aspect,0.2)); // cols for a grid shaped like the container
+  let best=1, bestScore=Infinity;
+  for(let c=1;c<=n;c++){
+    if(n%c) continue;                              // only exact divisors → never an empty cell
+    const penalty = c>maxCols ? (c-maxCols)*4 : 0;
+    const score = Math.abs(c-ideal) + penalty;
+    if(score<bestScore){ bestScore=score; best=c; }
+  }
+  return { cols:best, rows:n/best };
+}
+function layoutGameGrid(){
+  const g=state.game, grid=$('#gameGrid'); if(!g||!grid||!g.tiles.length) return;
+  const {cols,rows}=gridDims(g.tiles.length);
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  grid.style.gridTemplateRows=`repeat(${rows},1fr)`;
+  grid.dataset.cols=cols;
+  // scale tile text to the actual cell size, so it reads well at any column count
+  const gap=7, W=grid.clientWidth||360, H=grid.clientHeight||480;
+  const cellW=(W-gap*(cols-1))/cols, cellH=(H-gap*(rows-1))/rows;
+  const fs=Math.max(9, Math.min(cellW/6.2, cellH/2.4, 24));
+  grid.style.setProperty('--tile-fs', fs.toFixed(1)+'px');
+}
 function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0]:t)||''; }
 function updateGameBest(){
   const slider=$('#gameCount'); if(!slider) return;
@@ -709,10 +739,6 @@ function startGame(){
 }
 function renderGameGrid(){
   const g=state.game, grid=$('#gameGrid'); if(!grid) return;
-  const cols=gameCols(g.count), rows=Math.ceil(g.tiles.length/cols);
-  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
-  grid.style.gridTemplateRows=`repeat(${rows},1fr)`;
-  grid.dataset.cols=cols;
   grid.innerHTML='';
   g.tiles.forEach(t=>{
     const b=document.createElement('button');
@@ -720,8 +746,16 @@ function renderGameGrid(){
     b.textContent=t.text; b.onclick=()=>onTileTap(t,b);
     t.el=b; grid.appendChild(b);
   });
+  layoutGameGrid();
+  requestAnimationFrame(layoutGameGrid);   // re-measure once the grid has its final size
   if($('#gameResult')){ $('#gameResult').classList.remove('show'); $('#gameResult').hidden=true; }
 }
+// re-flow the grid (columns + tile text) when the window resizes or rotates
+let _gridResizeT=null;
+window.addEventListener('resize', ()=>{
+  const gs=$('#game'); if(!gs || gs.classList.contains('hidden') || !state.game) return;
+  clearTimeout(_gridResizeT); _gridResizeT=setTimeout(layoutGameGrid, 80);   // setTimeout, not rAF (fires even when throttled)
+});
 function onTileTap(t,b){
   const g=state.game; if(!g||g.done||t.matched) return;
   if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); return; }

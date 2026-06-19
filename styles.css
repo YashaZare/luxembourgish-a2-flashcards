@@ -500,6 +500,7 @@ input{font:inherit}
 .game-tile{display:flex;align-items:center;justify-content:center;text-align:center;padding:5px 6px;
   border-radius:14px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--sh-sm);
   font-weight:700;color:var(--ink);line-height:1.18;overflow:hidden;word-break:break-word;
+  font-size:var(--tile-fs,14px);
   -webkit-tap-highlight-color:transparent;transition:transform .1s, background .15s, opacity .25s, border-color .15s}
 .game-tile.tt{color:var(--brand2)}                   /* translation tiles tinted */
 .game-tile:active{transform:scale(.95)}
@@ -507,10 +508,19 @@ input{font:inherit}
 .game-tile.wrong{background:#f6d3d1;border-color:var(--warn);color:var(--warn-deep);animation:shake .26s}
 .game-tile.matched{opacity:0;pointer-events:none;transform:scale(.84)}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-.game-grid[data-cols="2"] .game-tile{font-size:18px}
-.game-grid[data-cols="3"] .game-tile{font-size:15px}
-.game-grid[data-cols="4"] .game-tile{font-size:12.5px;border-radius:12px}
-.game-grid[data-cols="5"] .game-tile{font-size:10.5px;border-radius:10px;padding:3px}
+/* tile text size is computed per cell in JS (--tile-fs); tighten radius/padding as tiles shrink */
+.game-grid[data-cols="4"] .game-tile{border-radius:12px}
+.game-grid[data-cols="5"] .game-tile{border-radius:10px;padding:3px}
+.game-grid[data-cols="6"] .game-tile,.game-grid[data-cols="7"] .game-tile,
+.game-grid[data-cols="8"] .game-tile,.game-grid[data-cols="9"] .game-tile,
+.game-grid[data-cols="10"] .game-tile{border-radius:9px;padding:2px}
+
+/* On a wide screen (desktop), the match game breaks out of the phone column into a
+   landscape board that fills the space; other screens stay phone-width. */
+@media (min-width:760px){
+  #game.screen{max-width:min(1180px,95vw);padding-left:max(var(--safe-l),26px);padding-right:max(var(--safe-r),26px)}
+  .game-grid{gap:10px}
+}
 /* result overlay */
 .game-result{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;
   background:rgba(55,53,48,.42);opacity:0;transition:opacity .2s;padding:20px}
