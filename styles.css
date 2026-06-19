@@ -506,7 +506,7 @@ input{font:inherit}
   -webkit-tap-highlight-color:transparent;transition:transform .1s, background .15s, opacity .25s, border-color .15s}
 /* Source (Lëtzebuergesch) vs target (translation) read apart by SHAPE + a tiny corner tag,
    NOT by colour — so the gender-colour mechanic can layer on top later. */
-.game-tile.tw{border-radius:4px}                     /* Lëtzebuergesch = sharp square "word block" */
+.game-tile.tw{border-radius:14px}                    /* Lëtzebuergesch = soft rounded card */
 .game-tile.tt{border-radius:999px;color:var(--brand2)}/* translation = full pill — clearly another category */
 .game-tile:active{transform:scale(.95)}
 .game-tile.dragging{opacity:.35}
@@ -514,7 +514,7 @@ input{font:inherit}
 .tile-ghost{position:fixed;z-index:60;display:flex;align-items:center;justify-content:center;text-align:center;
   pointer-events:none;font-weight:700;line-height:1.18;padding:5px 6px;overflow:hidden;font-size:var(--tile-fs,14px);
   background:var(--brand);color:var(--on-mint);box-shadow:0 12px 26px rgba(0,0,0,.32);transform:scale(1.07)}
-.tile-ghost.tw{border-radius:4px}
+.tile-ghost.tw{border-radius:14px}
 .tile-ghost.tt{border-radius:999px}
 [data-theme="tactile"] .tile-ghost{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:0 12px 26px #000a, inset 0 1px 0 #ffb37a}
 .game-tile.sel{background:var(--brand);color:var(--on-mint);border-color:var(--brand);box-shadow:0 4px 12px rgba(99,184,148,.4)}
