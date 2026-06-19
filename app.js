@@ -800,7 +800,7 @@ function startGame(){
   show('game');                                  // stops any prior game timer
   const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
   state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, fumbles:0, node:null,
+    reviewed:0, newWords:0, fumbles:0, node:null, lang,
     budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
   // time-attack: bar shows progress (fills as you match) + a live clock, no losing
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
@@ -810,10 +810,12 @@ function startGame(){
 function renderGameGrid(){
   const g=state.game, grid=$('#gameGrid'); if(!grid) return;
   grid.innerHTML='';
+  const tag = t=> t.kind==='w' ? 'LB' : ((g.lang||'').toUpperCase());
   g.tiles.forEach(t=>{
     const b=document.createElement('button');
     b.className='game-tile '+(t.kind==='w'?'tw':'tt');
-    b.textContent=t.text; b.onclick=()=>onTileTap(t,b);
+    b.textContent=t.text; b._tile=t; b.dataset.tag=tag(t);
+    b.addEventListener('pointerdown', e=>onTilePointerDown(e,t,b));
     t.el=b; grid.appendChild(b);
   });
   layoutGameGrid();
@@ -826,35 +828,79 @@ window.addEventListener('resize', ()=>{
   const gs=$('#game'); if(!gs || gs.classList.contains('hidden') || !state.game) return;
   clearTimeout(_gridResizeT); _gridResizeT=setTimeout(layoutGameGrid, 80);   // setTimeout, not rAF (fires even when throttled)
 });
-function onTileTap(t,b){
+// ---- tile interaction: tap-to-pick (tapping another same-side tile just SWITCHES the
+//      pick, no penalty), plus drag-one-onto-its-pair as a faster alternative. ----
+function selectTile(t,b){ const g=state.game; g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); }
+function deselectTile(){ const g=state.game; if(g&&g.selEl) g.selEl.classList.remove('sel'); if(g){ g.sel=null; g.selEl=null; } }
+function pickTile(t,b){
   const g=state.game; if(!g||g.done||t.matched) return;
-  if(!g.sel){ g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); return; }
-  if(g.sel===t){ b.classList.remove('sel'); g.sel=null; g.selEl=null; SFX.unselect(); return; }
-  if(g.sel.id===t.id && g.sel.kind!==t.kind){          // a correct pair
-    const a=g.selEl, bb=b, card=t.card||g.sel.card;
-    t.matched=true; g.sel.matched=true;
-    bb.classList.add('matched'); a.classList.add('matched');
-    bb.classList.remove('sel'); a.classList.remove('sel');
-    const struggled = !!(t._struggled || g.sel._struggled);
-    g.matched++; g.streak=(g.streak||0)+1; g.sel=null; g.selEl=null;
-    const hard = card ? wordIsHard(card.w) : false;
-    // the match IS a review: grade it back to FSRS (clean → Good, fumbled → Hard)
-    if(global_SRS() && card){
-      const had = !!SRS.store.get(card.w);
-      SRS.store.grade(card.w, struggled ? SRS.GRADE.HARD : SRS.GRADE.GOOD);
-      g.reviewed++; if(!had) g.newWords++;
-    }
-    gameFx(a, bb, g.streak, hard);                     // particle burst + combo pop
-    if(card){ try{ playAudio(card); }catch(e){} }      // speak the cleared word (dual coding)
+  if(!g.sel){ selectTile(t,b); return; }
+  if(g.sel===t){ deselectTile(); SFX.unselect(); return; }
+  if(g.sel.kind===t.kind){ deselectTile(); selectTile(t,b); return; }   // same side → move the pick
+  resolveMatch(g.sel, g.selEl, t, b);                                    // opposite sides → try the match
+}
+function resolveMatch(a, aEl, b, bEl){
+  const g=state.game; if(!g||!a||!b||a.matched||b.matched) return;
+  g.sel=null; g.selEl=null; aEl.classList.remove('sel'); bEl.classList.remove('sel');
+  const card=a.card||b.card;
+  if(a.id===b.id){                                     // correct pair (kinds already differ)
+    const struggled=!!(a._struggled||b._struggled);
+    a.matched=true; b.matched=true; aEl.classList.add('matched'); bEl.classList.add('matched');
+    g.matched++; g.streak=(g.streak||0)+1;
+    const hard = card?wordIsHard(card.w):false;
+    if(global_SRS() && card){ const had=!!SRS.store.get(card.w); SRS.store.grade(card.w, struggled?SRS.GRADE.HARD:SRS.GRADE.GOOD); g.reviewed++; if(!had) g.newWords++; }
+    gameFx(aEl, bEl, g.streak, hard);
+    if(card){ try{ playAudio(card); }catch(e){} }
     if(g.matched>=g.pairs){ winGame(); }
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
-  } else {                                             // wrong → flash both, deselect; streak breaks
-    g.streak=0; g.fumbles=(g.fumbles||0)+1; g.sel._struggled=true; t._struggled=true;   // fumble → grades these Hard, costs stars
+  } else {                                             // wrong → flash both; streak breaks
+    g.streak=0; g.fumbles=(g.fumbles||0)+1; a._struggled=true; b._struggled=true;
     SFX.fail();
-    const a=g.selEl, bb=b; a.classList.add('wrong'); bb.classList.add('wrong'); a.classList.remove('sel');
-    g.sel=null; g.selEl=null;
-    setTimeout(()=>{ a.classList.remove('wrong'); bb.classList.remove('wrong'); }, 480);
+    aEl.classList.add('wrong'); bEl.classList.add('wrong');
+    setTimeout(()=>{ aEl.classList.remove('wrong'); bEl.classList.remove('wrong'); }, 480);
   }
+}
+// drag-to-match: hold and drag a tile onto its pair. A plain tap (no movement) falls through to pickTile.
+let _drag=null;
+function onTilePointerDown(e,t,b){
+  const g=state.game; if(!g||g.done||t.matched) return;
+  _drag={t,b,x0:e.clientX,y0:e.clientY,moved:false,ghost:null,over:null};
+  try{ b.setPointerCapture(e.pointerId); }catch(_){}
+  b.addEventListener('pointermove', onTilePointerMove);
+  b.addEventListener('pointerup', onTilePointerUp);
+  b.addEventListener('pointercancel', onTilePointerUp);
+}
+function tileUnder(x,y,d){
+  const el=document.elementFromPoint(x,y), tb=el&&el.closest&&el.closest('.game-tile');
+  if(tb && tb!==d.b && tb._tile && !tb._tile.matched && tb._tile.kind!==d.t.kind) return tb;
+  return null;
+}
+function onTilePointerMove(e){
+  const d=_drag; if(!d) return;
+  if(!d.moved){ if(Math.hypot(e.clientX-d.x0,e.clientY-d.y0)<9) return;   // tap threshold
+    d.moved=true; d.b.classList.add('dragging');
+    const r=d.b.getBoundingClientRect(); d.hw=r.width/2; d.hh=r.height/2;
+    const gh=document.createElement('div'); gh.className='tile-ghost '+(d.t.kind==='w'?'tw':'tt');
+    gh.textContent=d.t.text; gh.style.width=r.width+'px'; gh.style.height=r.height+'px'; gh.style.setProperty('--tile-fs', getComputedStyle(d.b).fontSize);
+    document.body.appendChild(gh); d.ghost=gh;
+  }
+  if(d.ghost){ d.ghost.style.left=(e.clientX-d.hw)+'px'; d.ghost.style.top=(e.clientY-d.hh)+'px'; }
+  const tb=tileUnder(e.clientX,e.clientY,d);
+  if(d.over && d.over!==tb) d.over.classList.remove('drop-target');
+  if(tb) tb.classList.add('drop-target');
+  d.over=tb;
+}
+function onTilePointerUp(e){
+  const d=_drag; if(!d) return; _drag=null;
+  d.b.removeEventListener('pointermove', onTilePointerMove);
+  d.b.removeEventListener('pointerup', onTilePointerUp);
+  d.b.removeEventListener('pointercancel', onTilePointerUp);
+  if(d.ghost) d.ghost.remove();
+  d.b.classList.remove('dragging');
+  if(d.over) d.over.classList.remove('drop-target');
+  if(!d.moved){ pickTile(d.t, d.b); return; }          // it was a tap
+  const tb=tileUnder(e.clientX,e.clientY,d);            // dropped onto a valid opposite-side tile?
+  if(tb) resolveMatch(d.t, d.b, tb._tile, tb);         // else: snap back, no penalty
 }
 function startGameTimer(){
   const g=state.game; g.start=performance.now();
@@ -1030,7 +1076,7 @@ function startNodeGame(idx){
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR,
+    reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
   const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; }
