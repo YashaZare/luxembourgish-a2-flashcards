@@ -475,6 +475,11 @@ input{font:inherit}
 .mc-sub{font-size:13px;color:var(--muted);max-width:90%}
 .mode-card.game{gap:9px}
 .game-count{width:100%;margin-top:8px}
+.gc-modes{display:flex;gap:6px;margin-bottom:14px}
+.gc-mode{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 6px;font-size:12.5px;font-weight:700;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:11px;cursor:pointer}
+.gc-mode .ic{width:1.05em;height:1.05em;vertical-align:-.14em}
+.gc-mode.on{background:var(--brand);border-color:var(--brand);color:var(--on-mint);box-shadow:0 3px 9px rgba(99,184,148,.32)}
+.gc-mode.on .ic{filter:brightness(0)}
 .gc-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px}
 .gc-row b{font-size:18px;color:var(--ink);font-weight:800}
 .game-slider{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;background:var(--panel2);outline:none}
@@ -489,6 +494,8 @@ input{font:inherit}
 .game-bar-wrap{flex:1}
 .game-bar-wrap .bar{transition:none}                 /* instant countdown, no lag */
 #gameBar.low{background:linear-gradient(90deg,#e8a25c,var(--warn))}
+#gameBar.fill{background:linear-gradient(90deg,#7fcfae,var(--brand))}   /* time-attack: progress, not drain */
+.game-clock{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;color:var(--ink);min-width:52px;text-align:right;flex:none}
 .game-grid{flex:1;display:grid;gap:7px;min-height:0}
 .game-tile{display:flex;align-items:center;justify-content:center;text-align:center;padding:5px 6px;
   border-radius:14px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--sh-sm);
@@ -594,6 +601,10 @@ input{font:inherit}
   background:var(--panel2);box-shadow:inset 2px 2px 5px #141418, inset -1px -1px 3px #343440}
 [data-theme="tactile"] .dual-slider .track-fill,[data-theme="tactile"] .progress .bar{background:linear-gradient(90deg,#d56a22,#ef9048)}
 [data-theme="tactile"] #gameBar.low{background:linear-gradient(90deg,#cf5a48,#e0705e)}
+[data-theme="tactile"] #gameBar.fill{background:linear-gradient(90deg,#d56a22,#ef9048)}
+[data-theme="tactile"] .gc-mode{background:var(--panel2);box-shadow:inset 1px 1px 3px #141418, inset -1px -1px 3px #343440;border:1px solid #00000022}
+[data-theme="tactile"] .gc-mode.on{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;text-shadow:0 1px 1px #0006;box-shadow:0 3px 8px #0007, inset 0 1px 0 #ffb37a;border:1px solid #00000038}
+[data-theme="tactile"] .gc-mode.on .ic{filter:brightness(0) invert(1)}
 [data-theme="tactile"] .dual-slider input[type=range]::-webkit-slider-thumb,
 [data-theme="tactile"] .game-slider::-webkit-slider-thumb{background:linear-gradient(180deg,#4c4c54,#2e2e34);border:3px solid #d56a22;box-shadow:2px 2px 6px #0009, inset 0 1px 0 #5c5c66}
 [data-theme="tactile"] .dual-slider input[type=range]::-moz-range-thumb,

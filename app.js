@@ -25,6 +25,7 @@ const state = {
   audioMode: 1, // audio mode: 0 = silent (tap to play) · 1 = auto-play · 2 = listening-first
   reverse: false, // reverse direction: meaning → Lëtzebuergesch
   theme: 'tactile', // visual theme: 'tactile' (default) | 'clay'
+  gameMode: 'countdown', // match game: 'countdown' (beat the clock) | 'attack' (no losing, race for a best time)
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -698,8 +699,12 @@ function startGame(){
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w}); tiles.push({id:i,kind:'t',text:firstTr(c,lang)}); });
   show('game');                                  // stops any prior game timer
+  const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
   state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length,
-    budget:Math.max(20, pool.length*5), remaining:0, start:0, raf:null, count:n, done:false };
+    budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
+  // time-attack: bar shows progress (fills as you match) + a live clock, no losing
+  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden = mode!=='attack'; clk.textContent='0.0s'; }
   renderGameGrid(); startGameTimer();
 }
 function renderGameGrid(){
@@ -736,12 +741,19 @@ function onTileTap(t,b){
 }
 function startGameTimer(){
   const g=state.game; g.start=performance.now();
+  const bar=$('#gameBar'), clock=$('#gameClock');
   const tick=()=>{
     if(state.game!==g || g.done) return;
-    g.remaining = g.budget - (performance.now()-g.start)/1000;
-    const pct = Math.max(0, g.remaining/g.budget)*100;
-    const bar=$('#gameBar'); if(bar){ bar.style.width=pct+'%'; bar.classList.toggle('low', pct<25); }
-    if(g.remaining<=0){ timeUp(); return; }
+    g.elapsed=(performance.now()-g.start)/1000;
+    if(g.mode==='attack'){                               // count up; never lose
+      if(bar) bar.style.width=(g.pairs?g.matched/g.pairs*100:0)+'%';
+      if(clock) clock.textContent=g.elapsed.toFixed(1)+'s';
+    } else {                                             // count down; can time out
+      g.remaining = g.budget - g.elapsed;
+      const pct = Math.max(0, g.remaining/g.budget)*100;
+      if(bar){ bar.style.width=pct+'%'; bar.classList.toggle('low', pct<25); }
+      if(g.remaining<=0){ timeUp(); return; }
+    }
     g.raf=requestAnimationFrame(tick);
   };
   g.raf=requestAnimationFrame(tick);
@@ -749,7 +761,8 @@ function startGameTimer(){
 function stopGame(){ const g=state.game; if(g){ if(g.raf) cancelAnimationFrame(g.raf); g.raf=null; g.done=true; } }
 function winGame(){
   const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
-  const elapsed = g.budget - g.remaining;
+  const elapsed = g.mode==='attack' ? (performance.now()-g.start)/1000 : (g.budget - g.remaining);
+  const bar=$('#gameBar'); if(bar && g.mode==='attack') bar.style.width='100%';
   const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
@@ -1101,7 +1114,7 @@ function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
     onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
-    audioMode:state.audioMode, reverse:state.reverse, theme:state.theme };
+    audioMode:state.audioMode, reverse:state.reverse, theme:state.theme, gameMode:state.gameMode };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
@@ -1125,6 +1138,7 @@ function restoreSettings(){
   if(typeof s.shuffle==='boolean') $('#shuffle').checked=s.shuffle;
   if(typeof s.theme==='string') applyTheme(s.theme);
   if(typeof s.reverse==='boolean') state.reverse = s.reverse;
+  if(s.gameMode==='attack'||s.gameMode==='countdown'){ state.gameMode=s.gameMode; reflectGameMode(); }
   if(typeof s.audioMode==='number') state.audioMode = s.audioMode;
   else if(typeof s.autoplay==='boolean') state.audioMode = s.autoplay?1:0;   // migrate old setting
   if($('#autoPlay')) $('#autoPlay').checked = state.audioMode>=1;
@@ -1171,7 +1185,13 @@ function wireGame(){
   if($('#gameCount')) $('#gameCount').oninput = updateGameBest;
   if($('#chooseBack')) $('#chooseBack').onclick = ()=>show('setup');
   if($('#gameBack')) $('#gameBack').onclick = ()=>show('choose');
+  $$('.gc-mode').forEach(b=> b.onclick = ()=>{ setGameMode(b.dataset.gmode); persist(); });
+  reflectGameMode();
 }
+function reflectGameMode(){
+  $$('.gc-mode').forEach(b=>{ const on=b.dataset.gmode===state.gameMode; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+}
+function setGameMode(m){ state.gameMode = m==='attack' ? 'attack' : 'countdown'; reflectGameMode(); }
 
 wireStudy();
 wireMonitor();

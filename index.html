@@ -15,7 +15,7 @@
 <script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
 if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
 document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
-<link rel="stylesheet" href="styles.css?v=50">
+<link rel="stylesheet" href="styles.css?v=51">
 </head>
 <body>
 <div id="app">
@@ -223,6 +223,10 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
         <span class="mc-title">Match game</span>
         <span class="mc-sub">Pair words to meanings, against the clock</span>
         <div class="game-count">
+          <div class="gc-modes" id="gameModes" role="group" aria-label="Game mode">
+            <button type="button" class="gc-mode on" data-gmode="countdown"><i class="ic ic-due"></i> Countdown</button>
+            <button type="button" class="gc-mode" data-gmode="attack"><i class="ic ic-streak"></i> Time attack</button>
+          </div>
           <div class="gc-row"><span>Tiles on screen</span><b id="gameCountVal">20</b></div>
           <input type="range" id="gameCount" min="10" max="50" step="10" value="20" class="game-slider" aria-label="Number of tiles">
           <div class="gc-best" id="gameBest"></div>
@@ -237,6 +241,7 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
     <div class="game-top">
       <button class="icon-btn" id="gameBack" aria-label="Quit game"><i class="ic ic-back-previous"></i></button>
       <div class="progress game-bar-wrap"><div class="bar" id="gameBar"></div></div>
+      <div class="game-clock" id="gameClock" hidden>0.0s</div>
     </div>
     <div class="game-grid" id="gameGrid"></div>
     <div class="game-result" id="gameResult" hidden></div>
@@ -283,8 +288,8 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=50"></script>
-<script src="progress.js?v=50"></script>
-<script src="app.js?v=50"></script>
+<script src="srs.js?v=51"></script>
+<script src="progress.js?v=51"></script>
+<script src="app.js?v=51"></script>
 </body>
 </html>
