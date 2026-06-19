@@ -705,7 +705,9 @@ input{font:inherit}
 [data-theme="tactile"] .top-box.on.listen{background:linear-gradient(180deg,#6fa8e0,#4f86c8)}
 
 /* game tiles */
-[data-theme="tactile"] .game-tile{background:var(--panel);box-shadow:var(--sh-sm);border:1px solid #00000038}
+/* Plain drop shadow + an INSET top sheen (not the dual neumorphic shadow) so the light
+   half can't bleed past the leftmost column into the page margin as a stray edge line. */
+[data-theme="tactile"] .game-tile{background:var(--panel);box-shadow:0 4px 10px #00000055, inset 0 1px 0 #ffffff12;border:1px solid #00000038}
 [data-theme="tactile"] .game-tile.tt{color:var(--brand2)}
 [data-theme="tactile"] .game-tile.sel{background:linear-gradient(180deg,#ef9048,#d56a22);color:#fff;box-shadow:0 4px 12px #0008, inset 0 1px 0 #ffb37a}
 [data-theme="tactile"] .game-tile.wrong{background:#4a2622;border-color:var(--warn);color:#f0b0a6}
