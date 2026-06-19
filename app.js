@@ -26,6 +26,7 @@ const state = {
   reverse: false, // reverse direction: meaning → Lëtzebuergesch
   theme: 'tactile', // visual theme: 'tactile' (default) | 'clay'
   gameMode: 'countdown', // match game: 'countdown' (beat the clock) | 'attack' (no losing, race for a best time)
+  book: 'a2', // selected book/level: 'a2' (default) | 'a1'
 };
 
 // friendly labels for the occurrence types shown on a card
@@ -45,25 +46,61 @@ function typeLabels(types){
 const LS = 'lux-fc-settings';
 
 const DATA_VERSION = '9';  // bump when flashcards.json changes (cache-busts the data URL)
+// Selectable books (same language/dictionary; per-word SRS memory is shared, but
+// adventure-map stars + match best-times are namespaced per book — see starsKey/bestKey).
+const BOOKS = {
+  a2: { file:'flashcards.json',    v:'9', label:'A2', tag:'Mëttelstuf' },
+  a1: { file:'flashcards-a1.json', v:'1', label:'A1', tag:'Ufänger' },
+};
+function curBook(){ return BOOKS[state.book] || BOOKS.a2; }
+function bestKey(n){ return 'lb_match_best_'+(state.book==='a1'?'a1_':'')+n; }   // A2 keeps original key
 
-async function boot(){
-  try{
-    const res = await fetch('data/flashcards.json?v='+DATA_VERSION, {cache:'force-cache'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    state.data = await res.json();
-  }catch(e){
-    $('#loading').textContent = 'Could not load vocabulary data. Please refresh.';
-    return;
-  }
-  $('#loading').classList.add('hidden');
-  if(global_SRS()) SRS.store.load();
+async function loadBook(book){
+  const b = BOOKS[book] || BOOKS.a2;
+  const res = await fetch('data/'+b.file+'?v='+b.v, {cache:'force-cache'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  state.data = await res.json();
+  state.book = (BOOKS[book] ? book : 'a2');
   state.cardByWord = {};
   for(const c of state.data.cards) state.cardByWord[c.w] = c;
+}
+async function boot(){
+  let saved = {}; try{ saved = JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){}
+  const book = (saved.book==='a1' || saved.book==='a2') ? saved.book : 'a2';
+  try{ await loadBook(book); }
+  catch(e){ $('#loading').textContent = 'Could not load vocabulary data. Please refresh.'; return; }
+  $('#loading').classList.add('hidden');
+  if(global_SRS()) SRS.store.load();
   buildSetup();
   restoreSettings();
+  reflectBook();
   recount();
   renderMemory();
 }
+// switch the active book/level: reload its data, reset the setup to the new book's
+// bounds, recompute progress, and persist. SRS memory is shared; map stars are per-book.
+async function switchBook(book){
+  if(!BOOKS[book] || book===state.book) return;
+  const keepLangs = [...state.selLangs];
+  try{ await loadBook(book); }catch(e){ return; }
+  if(window.Progress) Progress.invalidate();
+  // keep the user's languages if they exist in the new book (both books share de/fr/en/pt/nl)
+  state.selLangs = new Set(keepLangs.filter(l=>state.data.langs.includes(l)));
+  if(!state.selLangs.size) state.selLangs = new Set([state.data.langs.includes('en') ? 'en' : state.data.langs[0]]);
+  buildSetup();          // resets page range to the new book + rebuilds chips (page-specific)
+  reflectBook();
+  recount();
+  renderMemory();
+  persist();
+  show('setup');
+}
+function reflectBook(){
+  $$('.book-opt').forEach(b=>{ const on=b.dataset.book===state.book; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+  const lv=$('#bookLevel'); if(lv) lv.textContent = curBook().label;
+}
+// per-book memory counts (the shared SRS store, filtered to the current book's words)
+function bookWordList(){ return state.data ? [...new Set(state.data.cards.map(c=>c.w))] : []; }
+function bookStats(){ return global_SRS() ? SRS.store.stats(bookWordList()) : {seen:0,known:0,learning:0,due:0,new:0,total:0}; }
 // SRS is optional (separate script); guard so the app still runs if it failed to load
 function global_SRS(){ return typeof SRS !== 'undefined' && SRS; }
 
@@ -132,6 +169,7 @@ function buildSetup(){
   $('#startBtn').onclick = start;
   if($('#reviewDueBtn')) $('#reviewDueBtn').onclick = startReviewDue;
   $$('.theme-opt').forEach(b=> b.onclick = ()=>{ applyTheme(b.dataset.theme); persist(); });
+  $$('.book-opt').forEach(b=> b.onclick = ()=> switchBook(b.dataset.book));
   applyTheme(state.theme);   // sync the picker highlight (data-theme already set in <head>)
   syncGroupChips();
 }
@@ -463,7 +501,7 @@ function done(){
   const miss=Object.values(state.results).filter(x=>x==='miss').length;
   $('#progBar').style.width='100%';
   let extra='';
-  if(global_SRS()){ const t=SRS.store.totals();
+  if(global_SRS()){ const t=bookStats();
     extra = `<br><span class="done-mem"><i class="ic ic-memory"></i> <b>${t.known}</b> known · <b>${t.learning}</b> learning`+
             (t.due?` · <i class="ic ic-due"></i> ${t.due} still due`:` · all reviews cleared ✓`)+`</span>`; }
   $('#doneStats').innerHTML = `You went through <b>${state.deck.length}</b> cards.<br>✓ ${got} got &nbsp; • &nbsp; ↻ ${miss} to review${extra}`;
@@ -762,7 +800,7 @@ function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0
 function updateGameBest(){
   const slider=$('#gameCount'); if(!slider) return;
   const n=+slider.value; if($('#gameCountVal')) $('#gameCountVal').textContent=n;
-  const best=+localStorage.getItem('lb_match_best_'+n)||0;
+  const best=+localStorage.getItem(bestKey(n))||0;
   if($('#gameBest')) $('#gameBest').textContent = best ? `Best: ${best.toFixed(1)}s` : 'No best time yet';
   const dueEl=$('#gameDue');
   if(dueEl){
@@ -926,7 +964,7 @@ function winGame(){
   const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
   const elapsed = g.mode==='attack' ? (performance.now()-g.start)/1000 : (g.budget - g.remaining);
   const bar=$('#gameBar'); if(bar && g.mode==='attack') bar.style.width='100%';
-  const key='lb_match_best_'+g.count, prev=+localStorage.getItem(key)||0;
+  const key=bestKey(g.count), prev=+localStorage.getItem(key)||0;
   const isBest = !prev || elapsed<prev;
   if(isBest){ try{ localStorage.setItem(key, elapsed.toFixed(1)); }catch(e){} }
   // adventure node: award stars (1=cleared, 2=flawless, 3=flawless+fast) and keep the best
@@ -980,9 +1018,10 @@ function showGameResult(won, val, isBest){
 // FSRS-grading match round — so climbing the path = doing your spaced reviews.
 const NODE_TARGET = 20;          // ~words per node (tunable)
 const PAR_PER_PAIR = 2.8;        // seconds/pair under which a flawless run earns the 3rd star
-const STARS_KEY = 'lb_map_stars_v1';
-function loadStars(){ try{ return JSON.parse(localStorage.getItem(STARS_KEY))||{}; }catch(e){ return {}; } }
-function saveStars(s){ try{ localStorage.setItem(STARS_KEY, JSON.stringify(s)); }catch(e){} }
+// per-book stars (A2 keeps its original key so existing progress survives)
+function starsKey(){ return state.book==='a1' ? 'lb_map_stars_a1' : 'lb_map_stars_v1'; }
+function loadStars(){ try{ return JSON.parse(localStorage.getItem(starsKey()))||{}; }catch(e){ return {}; } }
+function saveStars(s){ try{ localStorage.setItem(starsKey(), JSON.stringify(s)); }catch(e){} }
 
 // Build the node list once (cached on the dataset). Each distinct word lands in the node of
 // its earliest book page; nodes are chunked to ~NODE_TARGET words and never cross a chapter.
@@ -1086,7 +1125,7 @@ function startNodeGame(idx){
 // ---- spaced repetition: memory summary + "review due" ----
 function renderMemory(){
   const bar=$('#memBar'); if(!bar || !global_SRS()) return;
-  const t=SRS.store.totals();
+  const t=bookStats();
   const btn=$('#reviewDueBtn'), stats=$('#memStats');
   bar.hidden=false;                       // always visible now (carries the Progress entry point)
   if(stats) stats.innerHTML = t.seen===0
@@ -1414,7 +1453,7 @@ function persist(){
   const s={ from:$('#pageFrom').value, to:$('#pageTo').value,
     types:[...state.selTypes], langs:[...state.selLangs],
     onlyTr:$('#onlyTranslated').checked, shuffle:$('#shuffle').checked,
-    audioMode:state.audioMode, reverse:state.reverse, theme:state.theme, gameMode:state.gameMode };
+    audioMode:state.audioMode, reverse:state.reverse, theme:state.theme, gameMode:state.gameMode, book:state.book };
   try{ localStorage.setItem(LS,JSON.stringify(s)); }catch(e){}
 }
 function restoreSettings(){
