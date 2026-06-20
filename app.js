@@ -1110,12 +1110,31 @@ function renderMap(){
   $$('#mapTrack .map-node').forEach(b=> b.onclick=()=>startNodeGame(+b.dataset.node));
   const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
 }
+const GAME_TARGET_WORDS = 20;   // node games aim for this many pairs → a clean, full board (40 tiles)
+// A node's game word-set: its own words, padded up to GAME_TARGET_WORDS with REVIEW words borrowed
+// from earlier nodes (nearest first; FSRS-hard words prioritised, with some easy mixed in) — or from
+// later nodes if this is the first node. Guarantees a grid-friendly count AND interleaves spaced review.
+function nodeGamePool(adv, idx, lang){
+  const has = c => c && firstTr(c,lang);
+  const own = adv.nodes[idx].words.map(it=>it.card).filter(has);
+  const TARGET = GAME_TARGET_WORDS;
+  if(own.length >= TARGET) return seedReviewPool(own, TARGET);          // cap big nodes (due-first)
+  const need = TARGET - own.length;
+  const used = new Set(own.map(c=>c.w));
+  const take = c => { if(has(c) && !used.has(c.w)){ used.add(c.w); return c; } return null; };
+  const cands=[];
+  for(let i=idx-1;i>=0 && cands.length<need*5;i--) for(const it of adv.nodes[i].words){ const c=take(it.card); if(c) cands.push(c); }
+  if(cands.length<need) for(let i=idx+1;i<adv.nodes.length && cands.length<need*5;i++){ for(const it of adv.nodes[i].words){ const c=take(it.card); if(c) cands.push(c); } }
+  const hard=shuffle(cands.filter(c=>wordIsHard(c.w))), easy=shuffle(cands.filter(c=>!wordIsHard(c.w)));
+  const nHard=Math.min(hard.length, Math.ceil(need*0.6));               // ~60% hard, rest easy
+  const borrowed=hard.slice(0,nHard).concat(easy, hard.slice(nHard)).slice(0, need);
+  return shuffle(own.concat(borrowed));
+}
 function startNodeGame(idx){
   ensureCtx();
   const adv=buildMap(), n=adv.nodes[idx]; if(!n) return;
   const lang=[...state.selLangs][0]||'en';
-  const cards=n.words.map(it=>it.card).filter(c=>firstTr(c,lang));
-  const pool=seedReviewPool(cards, cards.length);       // all node words, due-first ordering
+  const pool=nodeGamePool(adv, idx, lang);              // own words + borrowed review, to a clean target
   if(pool.length<2){ return; }
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
