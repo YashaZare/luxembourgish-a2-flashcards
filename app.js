@@ -1078,6 +1078,7 @@ function chapterParts(name){
 function renderMap(){
   const track=$('#mapTrack'); if(!track) return;
   const adv=buildMap(), stars=loadStars();
+  const lang=[...state.selLangs][0]||'en';
   const states=adv.nodes.map(nodeState);
   let curIdx=adv.nodes.findIndex(n=>!(stars[n.idx]>0)); if(curIdx<0) curIdx=adv.nodes.length-1;   // first un-cleared node
   // header progress: stars earned / total
@@ -1099,10 +1100,11 @@ function renderMap(){
     }
     const st=states[i], side=i%2?'right':'left', earned=stars[n.idx]||0, cur=i===curIdx;
     const ahead = i>curIdx && st.bucket==='unseen';
+    const wc = n.words.reduce((m,it)=> m + (it.card && firstTr(it.card,lang) ? 1 : 0), 0);   // this node's own words
     html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
       `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${i+1}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
-      `<span class="mn-cap">Säit ${n.a===n.b?n.a:n.a+'–'+n.b}${st.due?` · ${st.due} fälleg`:''}</span>`+
+      `<span class="mn-cap">Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}</span>`+
       (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
     `</button>`;
   });
