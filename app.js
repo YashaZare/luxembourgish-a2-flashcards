@@ -765,35 +765,41 @@ function praiseBanner(txt, big){
   const b=document.createElement('div'); b.className='fx-praise'+(big?' big':''); b.textContent=txt;
   fx.appendChild(b); b.addEventListener('animationend',()=>b.remove());
 }
-// Pick a column count that EXACTLY divides the tile count (so every row is full —
-// no half-empty last row) and best matches the container's shape: few columns on a
-// tall phone, many on a wide desktop. Returns {cols, rows}.
-function gridDims(n){
+// Pick a column count that matches the container's shape AND keeps the board a sane
+// rectangle: never a degenerate 2-columns-×-many-rows tower (which happens when the tile
+// count is 2×prime, e.g. 38), never more than MAXROWS rows. Prefer an exact divisor so
+// rows are full, but accept a non-divisor (the last row is centered) rather than go ugly.
+function gridDims(n, H){
   const grid=$('#gameGrid');
   const W = (grid&&grid.clientWidth)  || Math.min(window.innerWidth,560);
-  const H = (grid&&grid.clientHeight) || Math.round(window.innerHeight*0.7);
+  H = H || (grid&&grid.clientHeight) || Math.round(window.innerHeight*0.7);
   const aspect = W/Math.max(H,1);
-  const maxCols = Math.max(2, Math.floor(W/70));   // keep tiles tappable (≥~70px wide)
-  const ideal = Math.sqrt(n*Math.max(aspect,0.2)); // cols for a grid shaped like the container
-  let best=1, bestScore=Infinity;
-  for(let c=1;c<=n;c++){
-    if(n%c) continue;                              // only exact divisors → never an empty cell
-    const penalty = c>maxCols ? (c-maxCols)*4 : 0;
-    const score = Math.abs(c-ideal) + penalty;
-    if(score<bestScore){ bestScore=score; best=c; }
+  const maxCols = Math.max(3, Math.floor(W/64));     // tiles ≥ ~64px wide
+  const MAXROWS = 10;                                // beyond this, tiles get too short / overflow
+  let cols = Math.min(Math.max(Math.round(Math.sqrt(n*Math.max(aspect,0.18))), 2), maxCols);
+  while(Math.ceil(n/cols) > MAXROWS && cols < maxCols) cols++;   // add columns until rows fit
+  for(const c of [cols, cols+1, cols-1, cols+2]){    // prefer a nearby divisor → perfectly full rows
+    if(c>=2 && c<=maxCols && n%c===0 && Math.ceil(n/c)<=MAXROWS){ cols=c; break; }
   }
-  return { cols:best, rows:n/best };
+  return { cols, rows:Math.ceil(n/cols) };
 }
 function layoutGameGrid(){
   const g=state.game, grid=$('#gameGrid'); if(!g||!grid||!g.tiles.length) return;
-  const {cols,rows}=gridDims(g.tiles.length);
-  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
-  grid.style.gridTemplateRows=`repeat(${rows},1fr)`;
+  const n=g.tiles.length;
+  // Bound the board to the real viewport, deterministically (don't trust dvh / a grown clientHeight):
+  // available height = viewport minus the grid's top offset (the game bar + padding) minus a small gutter.
+  const top = grid.getBoundingClientRect().top;
+  const availH = Math.max(200, window.innerHeight - top - 12);
+  grid.style.flexGrow='0'; grid.style.height = availH+'px';   // never grow past the viewport → never scrolls
+  const {cols,rows}=gridDims(n, availH);
   grid.dataset.cols=cols;
-  // scale tile text to the actual cell size, so it reads well at any column count
-  const gap=7, W=grid.clientWidth||360, H=grid.clientHeight||480;
-  const cellW=(W-gap*(cols-1))/cols, cellH=(H-gap*(rows-1))/rows;
-  const fs=Math.max(9, Math.min(cellW/6.2, cellH/2.4, 24));
+  // flex-wrap board: explicit per-tile size fills the space; a partial last row centers.
+  const gap=parseFloat(getComputedStyle(grid).gap)||7;
+  const W=grid.clientWidth||360;
+  const tw=Math.floor((W-gap*(cols-1))/cols), th=Math.floor((availH-gap*(rows-1))/rows);
+  grid.style.setProperty('--tile-w', tw+'px');
+  grid.style.setProperty('--tile-h', th+'px');
+  const fs=Math.max(9, Math.min(tw/6.2, th/2.4, 24));
   grid.style.setProperty('--tile-fs', fs.toFixed(1)+'px');
 }
 function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0]:t)||''; }
