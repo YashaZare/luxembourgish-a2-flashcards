@@ -599,7 +599,8 @@ input{font:inherit}
 .map-progress{margin-left:auto;font-weight:800;color:var(--brand2);font-size:15px;display:flex;align-items:center;gap:5px}
 .map-progress .ic{width:18px;height:18px}
 #map{background:radial-gradient(125% 78% at 50% 0%, #f4e8ca 0%, #ead9b2 52%, #ddc99b 100%)}   /* parchment treasure map */
-.map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px}
+.map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px;
+  background:linear-gradient(rgba(245,234,208,.44),rgba(245,234,208,.44)), url('img/map-bg.jpg') repeat-y center top / 100% auto}
 .map-track::before{display:none}   /* old straight dashed path — replaced by #mapTrail dotted trail */
 #mapTrail{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
 .trail-line{fill:none;stroke:rgba(60,45,20,.16);stroke-width:9;stroke-linecap:round}      /* soft groove under the dots */
@@ -612,7 +613,10 @@ input{font:inherit}
 .map-node{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:130px;margin:12px auto;background:none;border:none;cursor:pointer;padding:0}
 .map-node.left{transform:translateX(-66px)}
 .map-node.right{transform:translateX(66px)}
-.map-node.ahead{opacity:.55}
+.map-node.ahead{opacity:.72}
+/* on-map labels get a halo so they read over the busy treasure-map texture */
+.mn-cap,.mn-here,.mn-stars{text-shadow:0 1px 0 rgba(248,240,222,.95), 0 0 4px rgba(248,240,222,.85)}
+[data-theme="tactile"] .mn-cap,[data-theme="tactile"] .mn-here,[data-theme="tactile"] .mn-stars{text-shadow:0 1px 3px rgba(0,0,0,.75), 0 0 4px rgba(0,0,0,.55)}
 .mn-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   border:3px solid #ffffffdd;box-shadow:0 0 0 1.5px rgba(75,55,25,.22), 0 6px 14px rgba(55,40,15,.30)}
 .mn-num{font-size:20px;font-weight:900;color:var(--ink)}
@@ -622,12 +626,14 @@ input{font:inherit}
 .mn-stars{display:flex;gap:2px;margin-top:6px}
 .mn-star{font-size:12px;color:var(--line)}
 .mn-star.on{color:#f2b736}
-.mn-cap{font-size:10px;color:var(--muted);margin-top:3px;text-align:center;max-width:104px;line-height:1.25}
+.mn-cap{font-size:10px;font-weight:700;color:#5a4a30;margin-top:3px;text-align:center;max-width:104px;line-height:1.25}
+[data-theme="tactile"] .mn-cap{color:#e9dcc4}
 .mn-here{font-size:9.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--brand2);margin-top:3px}
 
 /* ---- Adventure: Tactile Dark overrides ---- */
 [data-theme="tactile"] .adventure-btn{background:linear-gradient(135deg,#ef9048,#d56a22);color:#fff;box-shadow:0 8px 22px #0008, inset 0 1px 0 #ffb37a}
 [data-theme="tactile"] #map{background:radial-gradient(125% 78% at 50% 0%, #2d2720 0%, #231e18 58%, #1a1611 100%)}   /* aged-leather map */
+[data-theme="tactile"] .map-track{background:linear-gradient(rgba(18,14,9,.56),rgba(18,14,9,.56)), url('img/map-bg.jpg') repeat-y center top / 100% auto}
 [data-theme="tactile"] .trail-line{stroke:rgba(0,0,0,.42)}
 [data-theme="tactile"] .trail-dots{stroke:#ecca9c}
 [data-theme="tactile"] .map-chapter{background:#2a241d;border-color:#ffffff1a;box-shadow:0 3px 10px #0006}

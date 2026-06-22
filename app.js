@@ -1119,10 +1119,10 @@ function layoutMapTrail(){
   const track=$('#mapTrack'); const nodes=$$('#mapTrack .map-node');
   if(!track||!nodes.length) return;
   const W=track.clientWidth||340;
-  const maxOff=Math.max(48, W/2 - 46);                          // keep the circle fully on-screen
-  const A=Math.min(W*0.42, maxOff/1.4, 168);                    // bold wiggle (|x| ≤ 1.4A ≤ maxOff)
-  nodes.forEach((el,i)=>{                                        // two summed sines → organic, varied left-right meander
-    const x=Math.round(A*Math.sin(i*1.0+0.3) + A*0.4*Math.sin(i*2.3+0.7));
+  const maxOff=Math.max(52, W/2 - 40);                          // keep the circle fully on-screen (8px margin)
+  const A=Math.min(W*0.52, maxOff/1.45, 190);                   // BOLD wiggle (|x| ≤ 1.45A ≤ maxOff)
+  nodes.forEach((el,i)=>{                                        // two summed sines → dramatic, varied left-right meander
+    const x=Math.round(A*Math.sin(i*1.25+0.4) + A*0.45*Math.sin(i*2.7+0.9));
     el.style.transform='translateX('+x+'px)';
   });
   const tr=track.getBoundingClientRect();
