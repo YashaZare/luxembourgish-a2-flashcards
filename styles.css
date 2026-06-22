@@ -598,9 +598,8 @@ input{font:inherit}
 .map-head{align-items:center;gap:12px}
 .map-progress{margin-left:auto;font-weight:800;color:var(--brand2);font-size:15px;display:flex;align-items:center;gap:5px}
 .map-progress .ic{width:18px;height:18px}
-#map{background:radial-gradient(125% 78% at 50% 0%, #f4e8ca 0%, #ead9b2 52%, #ddc99b 100%)}   /* parchment treasure map */
-.map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px;
-  background:linear-gradient(rgba(245,234,208,.44),rgba(245,234,208,.44)), url('img/map-bg.jpg') repeat-y center top / 100% auto}
+#map{background:linear-gradient(rgba(245,234,208,.40),rgba(245,234,208,.40)), url('img/map-bg.jpg') repeat-y center top / 100% auto, #e9d9b4}   /* full-bleed treasure-map texture */
+.map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px}
 .map-track::before{display:none}   /* old straight dashed path — replaced by #mapTrail dotted trail */
 #mapTrail{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
 .trail-line{fill:none;stroke:rgba(60,45,20,.16);stroke-width:9;stroke-linecap:round}      /* soft groove under the dots */
@@ -632,8 +631,7 @@ input{font:inherit}
 
 /* ---- Adventure: Tactile Dark overrides ---- */
 [data-theme="tactile"] .adventure-btn{background:linear-gradient(135deg,#ef9048,#d56a22);color:#fff;box-shadow:0 8px 22px #0008, inset 0 1px 0 #ffb37a}
-[data-theme="tactile"] #map{background:radial-gradient(125% 78% at 50% 0%, #2d2720 0%, #231e18 58%, #1a1611 100%)}   /* aged-leather map */
-[data-theme="tactile"] .map-track{background:linear-gradient(rgba(18,14,9,.56),rgba(18,14,9,.56)), url('img/map-bg.jpg') repeat-y center top / 100% auto}
+[data-theme="tactile"] #map{background:linear-gradient(rgba(18,14,9,.55),rgba(18,14,9,.55)), url('img/map-bg.jpg') repeat-y center top / 100% auto, #1c1813}   /* full-bleed aged-leather map */
 [data-theme="tactile"] .trail-line{stroke:rgba(0,0,0,.42)}
 [data-theme="tactile"] .trail-dots{stroke:#ecca9c}
 [data-theme="tactile"] .map-chapter{background:#2a241d;border-color:#ffffff1a;box-shadow:0 3px 10px #0006}
