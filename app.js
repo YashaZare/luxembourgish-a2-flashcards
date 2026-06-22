@@ -869,6 +869,7 @@ function renderGameGrid(){
 // re-flow the grid (columns + tile text) when the window resizes or rotates
 let _gridResizeT=null;
 window.addEventListener('resize', ()=>{
+  const mp=$('#map'); if(mp && !mp.classList.contains('hidden')){ clearTimeout(_gridResizeT); _gridResizeT=setTimeout(layoutMapTrail, 80); return; }
   const gs=$('#game'); if(!gs || gs.classList.contains('hidden') || !state.game) return;
   clearTimeout(_gridResizeT); _gridResizeT=setTimeout(layoutGameGrid, 80);   // setTimeout, not rAF (fires even when throttled)
 });
@@ -1110,7 +1111,35 @@ function renderMap(){
   });
   track.innerHTML=html;
   $$('#mapTrack .map-node').forEach(b=> b.onclick=()=>startNodeGame(+b.dataset.node));
+  layoutMapTrail(); requestAnimationFrame(layoutMapTrail);   // serpentine offsets + dotted treasure-trail
   const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
+}
+// Lay nodes on an organic serpentine, then draw the dotted "treasure-trail" curving through them.
+function layoutMapTrail(){
+  const track=$('#mapTrack'); const nodes=$$('#mapTrack .map-node');
+  if(!track||!nodes.length) return;
+  const W=track.clientWidth||340;
+  const maxOff=Math.max(48, W/2 - 46);                          // keep the circle fully on-screen
+  const A=Math.min(W*0.42, maxOff/1.4, 168);                    // bold wiggle (|x| ≤ 1.4A ≤ maxOff)
+  nodes.forEach((el,i)=>{                                        // two summed sines → organic, varied left-right meander
+    const x=Math.round(A*Math.sin(i*1.0+0.3) + A*0.4*Math.sin(i*2.3+0.7));
+    el.style.transform='translateX('+x+'px)';
+  });
+  const tr=track.getBoundingClientRect();
+  const pts=nodes.map(el=>{ const c=el.querySelector('.mn-circle').getBoundingClientRect();
+    return {x:c.left-tr.left+c.width/2, y:c.top-tr.top+c.height/2}; });
+  let d='M'+pts[0].x.toFixed(1)+' '+pts[0].y.toFixed(1);        // Catmull-Rom → cubic bezier (smooth curve through nodes)
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d+=' C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2.x.toFixed(1)+' '+p2.y.toFixed(1);
+  }
+  const H=Math.max(track.scrollHeight, track.clientHeight);
+  let svg=$('#mapTrail');
+  if(!svg){ svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.id='mapTrail'; track.insertBefore(svg, track.firstChild); }
+  svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML='<path d="'+d+'" class="trail-line"/><path d="'+d+'" class="trail-dots"/>';
 }
 const GAME_TARGET_WORDS = 20;   // node games aim for this many pairs → a clean, full board (40 tiles)
 // A node's game word-set: its own words, padded up to GAME_TARGET_WORDS with REVIEW words borrowed

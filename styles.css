@@ -598,9 +598,13 @@ input{font:inherit}
 .map-head{align-items:center;gap:12px}
 .map-progress{margin-left:auto;font-weight:800;color:var(--brand2);font-size:15px;display:flex;align-items:center;gap:5px}
 .map-progress .ic{width:18px;height:18px}
+#map{background:radial-gradient(125% 78% at 50% 0%, #f4e8ca 0%, #ead9b2 52%, #ddc99b 100%)}   /* parchment treasure map */
 .map-track{position:relative;max-width:520px;margin:0 auto;width:100%;padding:6px 0 60px}
-.map-track::before{content:"";position:absolute;left:50%;top:8px;bottom:34px;width:0;border-left:4px dashed var(--line);transform:translateX(-50%);z-index:0}
-.map-chapter{position:relative;z-index:2;text-align:center;margin:30px auto 14px;max-width:340px;background:var(--bg);padding:8px 8px;border-radius:14px}
+.map-track::before{display:none}   /* old straight dashed path — replaced by #mapTrail dotted trail */
+#mapTrail{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+.trail-line{fill:none;stroke:rgba(60,45,20,.16);stroke-width:9;stroke-linecap:round}      /* soft groove under the dots */
+.trail-dots{fill:none;stroke:#a06f37;stroke-width:7;stroke-linecap:round;stroke-dasharray:0.1 15;opacity:.92}  /* string of pearls */
+.map-chapter{position:relative;z-index:2;text-align:center;margin:30px auto 14px;max-width:340px;background:#fbf3df;border:1px solid #e0cda3;box-shadow:0 3px 10px rgba(80,60,30,.14);padding:8px 10px;border-radius:14px}
 .mc-eyebrow{font-size:11px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--brand2)}
 .mc-name{font-size:19px;font-weight:900;color:var(--ink);line-height:1.15;margin-top:2px}
 .mc-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
@@ -610,7 +614,7 @@ input{font:inherit}
 .map-node.right{transform:translateX(66px)}
 .map-node.ahead{opacity:.55}
 .mn-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  border:3px solid #ffffffcc;box-shadow:0 5px 14px rgba(60,55,45,.22)}
+  border:3px solid #ffffffdd;box-shadow:0 0 0 1.5px rgba(75,55,25,.22), 0 6px 14px rgba(55,40,15,.30)}
 .mn-num{font-size:20px;font-weight:900;color:var(--ink)}
 .mn-done{font-size:26px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
 .map-node.current .mn-circle{width:74px;height:74px;animation:nodePulse 1.7s ease-in-out infinite}
@@ -618,13 +622,16 @@ input{font:inherit}
 .mn-stars{display:flex;gap:2px;margin-top:6px}
 .mn-star{font-size:12px;color:var(--line)}
 .mn-star.on{color:#f2b736}
-.mn-cap{font-size:10px;color:var(--muted);margin-top:3px;text-align:center;max-width:118px}
+.mn-cap{font-size:10px;color:var(--muted);margin-top:3px;text-align:center;max-width:104px;line-height:1.25}
 .mn-here{font-size:9.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--brand2);margin-top:3px}
 
 /* ---- Adventure: Tactile Dark overrides ---- */
 [data-theme="tactile"] .adventure-btn{background:linear-gradient(135deg,#ef9048,#d56a22);color:#fff;box-shadow:0 8px 22px #0008, inset 0 1px 0 #ffb37a}
-[data-theme="tactile"] .map-track::before{border-left-color:#ffffff1f}
-[data-theme="tactile"] .mn-circle{border-color:#ffffff22;box-shadow:0 5px 14px #0008}
+[data-theme="tactile"] #map{background:radial-gradient(125% 78% at 50% 0%, #2d2720 0%, #231e18 58%, #1a1611 100%)}   /* aged-leather map */
+[data-theme="tactile"] .trail-line{stroke:rgba(0,0,0,.42)}
+[data-theme="tactile"] .trail-dots{stroke:#ecca9c}
+[data-theme="tactile"] .map-chapter{background:#2a241d;border-color:#ffffff1a;box-shadow:0 3px 10px #0006}
+[data-theme="tactile"] .mn-circle{border-color:#ffffff2b;box-shadow:0 0 0 1.5px #00000055, 0 6px 14px #000a}
 [data-theme="tactile"] .map-node.current .mn-circle{animation:nodePulseT 1.7s ease-in-out infinite}
 @keyframes nodePulseT{0%,100%{box-shadow:0 0 0 0 rgba(216,107,62,.6)}60%{box-shadow:0 0 0 12px rgba(216,107,62,0)}}
 

@@ -4,3 +4,5 @@ __pycache__/
 .wrangler/
 node_modules/
 audio/
+img/adventure/_masters/
+img/adventure/_preview/
