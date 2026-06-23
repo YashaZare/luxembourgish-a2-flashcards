@@ -771,8 +771,8 @@ function praiseBanner(txt, big){
 // rows are full, but accept a non-divisor (the last row is centered) rather than go ugly.
 function gridDims(n, H){
   const grid=$('#gameGrid');
-  const W = (grid&&grid.clientWidth)  || Math.min(window.innerWidth,560);
-  H = H || (grid&&grid.clientHeight) || Math.round(window.innerHeight*0.7);
+  let W = grid&&grid.clientWidth; if(!(W>120)) W=Math.min((window.innerWidth||360)-24, 520);   // iOS pre-layout fallback
+  H = H || (grid&&grid.clientHeight) || Math.round((window.innerHeight||640)*0.7);
   const aspect = W/Math.max(H,1);
   const maxCols = Math.max(3, Math.floor(W/64));     // tiles ≥ ~64px wide
   const MAXROWS = 10;                                // beyond this, tiles get too short / overflow
@@ -786,17 +786,20 @@ function gridDims(n, H){
 function layoutGameGrid(){
   const g=state.game, grid=$('#gameGrid'); if(!g||!grid||!g.tiles.length) return;
   const n=g.tiles.length;
-  // Bound the board to the real viewport, deterministically (don't trust dvh / a grown clientHeight):
-  // available height = viewport minus the grid's top offset (the game bar + padding) minus a small gutter.
-  const top = grid.getBoundingClientRect().top;
-  const availH = Math.max(200, window.innerHeight - top - 12);
-  grid.style.flexGrow='0'; grid.style.height = availH+'px';   // never grow past the viewport → never scrolls
+  // Width/height fallbacks: on iOS the grid can report a tiny/0 size before layout settles, which
+  // used to make tile width negative → a BLANK board. Fall back to viewport-derived sizes instead.
+  let W=grid.clientWidth;
+  if(!(W>120)) W=Math.min((window.innerWidth||360)-24, 520);
+  const top=grid.getBoundingClientRect().top;
+  let availH=(window.innerHeight||640) - top - 12;
+  if(!(availH>160)) availH=Math.max((window.innerHeight||640)*0.7, 320);
+  grid.style.flexGrow='0'; grid.style.height=availH+'px';     // never grow past the viewport → never scrolls
   const {cols,rows}=gridDims(n, availH);
   grid.dataset.cols=cols;
   // flex-wrap board: explicit per-tile size fills the space; a partial last row centers.
   const gap=parseFloat(getComputedStyle(grid).gap)||7;
-  const W=grid.clientWidth||360;
-  const tw=Math.floor((W-gap*(cols-1))/cols), th=Math.floor((availH-gap*(rows-1))/rows);
+  const tw=Math.max(28, Math.floor((W-gap*(cols-1))/cols));   // clamp ≥28 → tiles can NEVER collapse
+  const th=Math.max(28, Math.floor((availH-gap*(rows-1))/rows));
   grid.style.setProperty('--tile-w', tw+'px');
   grid.style.setProperty('--tile-h', th+'px');
   const fs=Math.max(9, Math.min(tw/6.2, th/2.4, 24));
@@ -864,6 +867,7 @@ function renderGameGrid(){
   });
   layoutGameGrid();
   requestAnimationFrame(layoutGameGrid);   // re-measure once the grid has its final size
+  setTimeout(layoutGameGrid, 160);         // and again after iOS settles its layout (belt + suspenders)
   if($('#gameResult')){ $('#gameResult').classList.remove('show'); $('#gameResult').hidden=true; }
 }
 // re-flow the grid (columns + tile text) when the window resizes or rotates
