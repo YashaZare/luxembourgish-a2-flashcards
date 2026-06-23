@@ -49,8 +49,8 @@ const DATA_VERSION = '9';  // bump when flashcards.json changes (cache-busts the
 // Selectable books (same language/dictionary; per-word SRS memory is shared, but
 // adventure-map stars + match best-times are namespaced per book — see starsKey/bestKey).
 const BOOKS = {
-  a2: { file:'flashcards.json',    v:'9', label:'A2', tag:'Mëttelstuf' },
-  a1: { file:'flashcards-a1.json', v:'1', label:'A1', tag:'Ufänger' },
+  a2: { file:'flashcards.json',    v:'10', label:'A2', tag:'Mëttelstuf' },
+  a1: { file:'flashcards-a1.json', v:'2', label:'A1', tag:'Ufänger' },
 };
 function curBook(){ return BOOKS[state.book] || BOOKS.a2; }
 function bestKey(n){ return 'lb_match_best_'+(state.book==='a1'?'a1_':'')+n; }   // A2 keeps original key
@@ -271,10 +271,7 @@ function render(skipPeek){
   $('#frontWord').textContent = c.w;
   $('#frontIpa').textContent = c.ip?`/${c.ip}/`:'';
   // base/dictionary form: the IPA is the lemma's, so when the word is an inflected form show its base
-  if(c.lemma){
-    const label = c.pos==='VRB' ? 'infinitive' : 'base form';
-    $('#frontBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(c.lemma)}`;
-  } else { $('#frontBase').innerHTML = ''; }
+  $('#frontBase').innerHTML = bfInner(c);
   const hasAudio = !!audioId(c);
   $('#frontSay').hidden = !hasAudio; $('#backSay').hidden = !hasAudio;
   $('#flash').classList.toggle('no-audio', !hasAudio);   // listening mode falls back to text
@@ -282,8 +279,7 @@ function render(skipPeek){
   // base/dictionary form too (the IPA is the lemma's), e.g. "infinitive: aneren".
   if($('#backWord')){
     let bwHTML = esc(c.w) + (c.ip?` <span class="bw-ipa">/${esc(c.ip)}/</span>`:'');
-    if(c.lemma){ const lbl = c.pos==='VRB' ? 'infinitive' : 'base form';
-      bwHTML += `<span class="bw-base"><span class="bf-label">${lbl}:</span> ${esc(c.lemma)}</span>`; }
+    if(c.lemma){ bwHTML += `<span class="bw-base">${bfInner(c)}</span>`; }
     $('#backWord').innerHTML = bwHTML;
   }
   if($('#listenCue')) $('#listenCue').hidden = !hasAudio;
@@ -465,9 +461,7 @@ function updatePeek(card){
   // mirror the listen button on the card behind so the layout doesn't shift when it
   // rises to the front (it's non-interactive here — purely for structural match)
   if($('#peekSay')) $('#peekSay').hidden = !audioId(card);
-  if(card.lemma){ const label=card.pos==='VRB'?'infinitive':'base form';
-    $('#peekBase').innerHTML = `<span class="bf-label">${label}:</span> ${esc(card.lemma)}`; }
-  else $('#peekBase').innerHTML = '';
+  $('#peekBase').innerHTML = bfInner(card);
   // reverse mode: the card behind must already show the meaning, so the swap is seamless
   if($('#peekMeaning')){
     const langs=[...state.selLangs].filter(l=>state.data.langs.includes(l));
@@ -1508,6 +1502,15 @@ function exItemHTML(item, word){
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function esc(s){ return (s+'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+// The base-form line. When we know which inflected form the word is (c.form, e.g. "plural",
+// "3rd person singular", "comparative"), say "<form> of <lemma>"; otherwise fall back to
+// "infinitive: <lemma>" (verbs) / "base form: <lemma>".
+function bfInner(c){
+  if(!c||!c.lemma) return '';
+  if(c.form) return `<span class="bf-label">${esc(c.form)} of</span> ${esc(c.lemma)}`;
+  const label = c.pos==='VRB' ? 'infinitive' : 'base form';
+  return `<span class="bf-label">${label}:</span> ${esc(c.lemma)}`;
+}
 function escapeEmph(sentence,word){
   const e=esc(sentence); const ew=esc(word);
   try{
