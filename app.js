@@ -804,6 +804,17 @@ function layoutGameGrid(){
   grid.style.setProperty('--tile-h', th+'px');
   const fs=Math.max(9, Math.min(tw/6.2, th/2.4, 24));
   grid.style.setProperty('--tile-fs', fs.toFixed(1)+'px');
+  try{   // TEMP on-screen debug — remove once the iOS blank-board bug is pinned down
+    let dbg=document.getElementById('gdbg');
+    if(!dbg){ dbg=document.createElement('div'); dbg.id='gdbg';
+      dbg.style.cssText='position:fixed;left:4px;bottom:4px;z-index:99999;font:10px/1.35 monospace;color:#0f0;background:rgba(0,0,0,.82);padding:4px 6px;border-radius:5px;pointer-events:none;white-space:pre';
+      document.body.appendChild(dbg); }
+    const t0=grid.children[0], r=t0&&t0.getBoundingClientRect();
+    dbg.textContent='v0.60.9  n='+grid.children.length+' cols='+cols
+      +'\ntw='+tw+' th='+th+' cw='+grid.clientWidth+' ch='+grid.clientHeight
+      +'\ntop='+Math.round(top)+' ih='+(window.innerHeight)+' aH='+Math.round(availH)
+      +'\ntile0='+(r?Math.round(r.width)+'x'+Math.round(r.height)+' @'+Math.round(r.left)+','+Math.round(r.top):'NONE');
+  }catch(e){}
 }
 function firstTr(c,lang){ const t=c.tr&&c.tr[lang]; return (Array.isArray(t)?t[0]:t)||''; }
 function updateGameBest(){
