@@ -793,7 +793,7 @@ function layoutGameGrid(){
   const top=grid.getBoundingClientRect().top;
   let availH=(window.innerHeight||640) - top - 12;
   if(!(availH>160)) availH=Math.max((window.innerHeight||640)*0.7, 320);
-  grid.style.flexGrow='0'; grid.style.height=availH+'px';     // never grow past the viewport → never scrolls
+  grid.style.flex='0 0 auto'; grid.style.height=availH+'px';   // flex:0 0 auto so the explicit height is honored (Safari ignores height when flex-basis is 0%) → grid never collapses to 0 and clips tiles
   const {cols,rows}=gridDims(n, availH);
   grid.dataset.cols=cols;
   // flex-wrap board: explicit per-tile size fills the space; a partial last row centers.
@@ -810,7 +810,7 @@ function layoutGameGrid(){
       dbg.style.cssText='position:fixed;left:4px;bottom:4px;z-index:99999;font:10px/1.35 monospace;color:#0f0;background:rgba(0,0,0,.82);padding:4px 6px;border-radius:5px;pointer-events:none;white-space:pre';
       document.body.appendChild(dbg); }
     const t0=grid.children[0], r=t0&&t0.getBoundingClientRect();
-    dbg.textContent='v0.60.9  n='+grid.children.length+' cols='+cols
+    dbg.textContent='v0.60.10  n='+grid.children.length+' cols='+cols
       +'\ntw='+tw+' th='+th+' cw='+grid.clientWidth+' ch='+grid.clientHeight
       +'\ntop='+Math.round(top)+' ih='+(window.innerHeight)+' aH='+Math.round(availH)
       +'\ntile0='+(r?Math.round(r.width)+'x'+Math.round(r.height)+' @'+Math.round(r.left)+','+Math.round(r.top):'NONE');
