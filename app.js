@@ -1148,7 +1148,10 @@ function layoutMapTrail(){
   let svg=$('#mapTrail');
   if(!svg){ svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.id='mapTrail'; track.insertBefore(svg, track.firstChild); }
   svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.innerHTML='<path d="'+d+'" class="trail-line"/><path d="'+d+'" class="trail-dots"/>';
+  // punch a hole in the trail around every node so the dots never show on/under a node circle
+  const holes=pts.map(p=>'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="40" fill="#000"/>').join('');
+  svg.innerHTML='<defs><mask id="trailMask"><rect width="'+W+'" height="'+H+'" fill="#fff"/>'+holes+'</mask></defs>'
+    +'<g mask="url(#trailMask)"><path d="'+d+'" class="trail-line"/><path d="'+d+'" class="trail-dots"/></g>';
 }
 const GAME_TARGET_WORDS = 20;   // node games aim for this many pairs → a clean, full board (40 tiles)
 // A node's game word-set: its own words, padded up to GAME_TARGET_WORDS with REVIEW words borrowed

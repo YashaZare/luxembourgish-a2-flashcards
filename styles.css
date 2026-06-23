@@ -505,6 +505,7 @@ input{font:inherit}
 
 /* ============================ MATCH GAME ============================ */
 #game{position:relative;overflow:hidden;height:100vh;height:100dvh}  /* bound to viewport so the board fits, never scrolls */
+[data-theme="tactile"] #game{background:linear-gradient(rgba(18,13,8,.40),rgba(18,13,8,.52)), url('img/game-bg.webp') center top / cover no-repeat, #14100c}  /* dark treasure backdrop */
 .game-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .game-bar-wrap{flex:1}
 .game-bar-wrap .bar{transition:none}                 /* instant countdown, no lag */
@@ -617,7 +618,7 @@ input{font:inherit}
 .mn-cap,.mn-here,.mn-stars{text-shadow:0 1px 0 rgba(248,240,222,.95), 0 0 4px rgba(248,240,222,.85)}
 [data-theme="tactile"] .mn-cap,[data-theme="tactile"] .mn-here,[data-theme="tactile"] .mn-stars{text-shadow:0 1px 3px rgba(0,0,0,.75), 0 0 4px rgba(0,0,0,.55)}
 .mn-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  border:3px solid #ffffffdd;box-shadow:0 0 0 1.5px rgba(75,55,25,.22), 0 6px 14px rgba(55,40,15,.30)}
+  border:3px solid #ffffffdd;box-shadow:0 0 0 1.5px rgba(75,55,25,.25), 0 13px 22px rgba(35,22,8,.5), 0 4px 8px rgba(35,22,8,.4)}
 .mn-num{font-size:20px;font-weight:900;color:var(--ink)}
 .mn-done{font-size:26px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
 .map-node.current .mn-circle{width:74px;height:74px;animation:nodePulse 1.7s ease-in-out infinite}
@@ -635,7 +636,7 @@ input{font:inherit}
 [data-theme="tactile"] .trail-line{stroke:rgba(0,0,0,.42)}
 [data-theme="tactile"] .trail-dots{stroke:#ecca9c}
 [data-theme="tactile"] .map-chapter{background:#2a241d;border-color:#ffffff1a;box-shadow:0 3px 10px #0006}
-[data-theme="tactile"] .mn-circle{border-color:#ffffff2b;box-shadow:0 0 0 1.5px #00000055, 0 6px 14px #000a}
+[data-theme="tactile"] .mn-circle{border-color:#ffffff2b;box-shadow:0 0 0 1.5px #00000066, 0 13px 24px #000c, 0 4px 8px #000a}
 [data-theme="tactile"] .map-node.current .mn-circle{animation:nodePulseT 1.7s ease-in-out infinite}
 @keyframes nodePulseT{0%,100%{box-shadow:0 0 0 0 rgba(216,107,62,.6)}60%{box-shadow:0 0 0 12px rgba(216,107,62,0)}}
 
