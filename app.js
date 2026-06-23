@@ -1110,8 +1110,13 @@ function renderMap(){
     `</button>`;
   });
   track.innerHTML=html;
-  $$('#mapTrack .map-node').forEach(b=> b.onclick=()=>startNodeGame(+b.dataset.node));
-  layoutMapTrail(); requestAnimationFrame(layoutMapTrail);   // serpentine offsets + dotted treasure-trail
+  // Robust tap handling: one delegated listener on the track (survives re-renders, catches taps on
+  // the circle/number/stars too) instead of per-node onclick. Bound once.
+  if(!track._nodeTap){ track._nodeTap=true;
+    track.addEventListener('click', e=>{ const b=e.target.closest && e.target.closest('.map-node');
+      if(b && track.contains(b)) startNodeGame(+b.dataset.node); });
+  }
+  try{ layoutMapTrail(); requestAnimationFrame(layoutMapTrail); }catch(e){}   // trail must never break the map
   const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
 }
 // Lay nodes on an organic serpentine, then draw the dotted "treasure-trail" curving through them.
