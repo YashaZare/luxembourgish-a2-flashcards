@@ -846,7 +846,7 @@ function startGame(){
     budget:Math.max(20, pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:n, mode, done:false };
   // time-attack: bar shows progress (fills as you match) + a live clock, no losing
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill', mode==='attack'); bar.style.width = mode==='attack'?'0%':'100%'; }
-  const clk=$('#gameClock'); if(clk){ clk.hidden = mode!=='attack'; clk.textContent='0.0s'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden = mode!=='attack'; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
   renderGameGrid(); startGameTimer();
 }
 function renderGameGrid(){
@@ -901,6 +901,7 @@ function resolveMatch(a, aEl, b, bEl){
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
   } else {                                             // wrong → flash both; streak breaks
     g.streak=0; g.fumbles=(g.fumbles||0)+1; a._struggled=true; b._struggled=true;
+    if(g.node!=null && g.fumbles===1){ const t=$('#gtTarget'); if(t) t.classList.add('lost'); }  // 3★ chase over
     SFX.fail(); buzz([8,40,8]);
     aEl.classList.add('wrong'); bEl.classList.add('wrong');
     setTimeout(()=>{ aEl.classList.remove('wrong'); bEl.classList.remove('wrong'); }, 480);
@@ -956,7 +957,8 @@ function startGameTimer(){
     g.elapsed=(performance.now()-g.start)/1000;
     if(g.mode==='attack'){                               // count up; never lose
       if(bar) bar.style.width=(g.pairs?g.matched/g.pairs*100:0)+'%';
-      if(clock) clock.textContent=g.elapsed.toFixed(1)+'s';
+      if(clock){ clock.textContent=g.elapsed.toFixed(1)+'s';
+        if(g.par) clock.classList.toggle('over-par', g.elapsed>g.par); }   // amber once the 3★ window closes
     } else {                                             // count down; can time out
       g.remaining = g.budget - g.elapsed;
       const pct = Math.max(0, g.remaining/g.budget)*100;
@@ -980,6 +982,7 @@ function winGame(){
     const earned = (g.fumbles>0) ? 1 : (elapsed<=g.par ? 3 : 2);
     const stars=loadStars(); g.starsPrev=stars[g.node]||0; g.starsEarned=earned;
     if(earned>g.starsPrev){ stars[g.node]=earned; saveStars(stars); }
+    state.lastWon=g.node;                    // → the map celebrates this node on next render
   }
   endReviewSession();
   finaleSound();                                   // rising "Sproochcrush" arpeggio
@@ -994,6 +997,13 @@ function endReviewSession(){ if(window.Progress) Progress.invalidate(); }
 function showGameResult(won, val, isBest){
   const el=$('#gameResult'); if(!el) return; const g=state.game;
   const rev = g.reviewed ? `<div class="gr-review"><i class="ic ic-due"></i> ${g.reviewed} word${g.reviewed>1?'s':''} reviewed${g.newWords?` · ${g.newWords} new`:''}</div>` : '';
+  // post-round recap: the pairs you fumbled — tap to hear them again (each is a micro-lesson)
+  const missCards=[], _seen=new Set();
+  (g.tiles||[]).forEach(t=>{ if(t._struggled && t.card && !_seen.has(t.card.w)){ _seen.add(t.card.w); missCards.push(t.card); } });
+  const missHtml = missCards.length ? `<div class="gr-miss"><div class="gr-miss-h">Nach eng Kéier kucken</div><div class="gr-miss-list">`+
+    missCards.slice(0,6).map((c,i)=>`<button class="gr-miss-w" data-mi="${i}" type="button"><b>${esc(c.w)}</b><small>${esc(firstTr(c,g.lang)||'')}${c.form?` · ${esc(c.form)} of ${esc(c.lemma)}`:''}</small></button>`).join('')+
+    `</div></div>` : '';
+  const wireMiss=()=>{ el.querySelectorAll('.gr-miss-w').forEach(b=>{ b.onclick=()=>{ const c=missCards[+b.dataset.mi]; if(c){ try{ playAudio(c); }catch(e){} } }; }); };
   if(g.node!=null && won){                              // adventure-node result: stars + map nav
     const e=g.starsEarned||1, adv=buildMap(), hasNext=g.node+1<adv.nodes.length;
     const starsHtml=[0,1,2].map(k=>`<span class="gr-star${k<e?' on':''}">★</span>`).join('');
@@ -1001,10 +1011,10 @@ function showGameResult(won, val, isBest){
     el.innerHTML = `<div class="gr-card"><div class="gr-kicker">Sproochcrush!</div>`+
       `<div class="gr-stars">${starsHtml}</div>`+
       `<div class="gr-title">Etapp ${g.node+1} fäerdeg!</div>`+
-      `<div class="gr-time">${blurb}</div>`+ rev+
+      `<div class="gr-time">${blurb}</div>`+ rev+ missHtml+
       `<div class="gr-btns"><button class="primary" id="gameNext"${hasNext?'':' disabled'}>Nächst Etapp →</button>`+
       `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
-    el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+    el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
     $('#gameNext').onclick=()=>{ el.classList.remove('show'); el.hidden=true; if(hasNext) startNodeGame(g.node+1); };
     $('#gameMap').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('map'); };
     return;
@@ -1012,10 +1022,10 @@ function showGameResult(won, val, isBest){
   el.innerHTML = `<div class="gr-card">${won?'<div class="gr-kicker">Sproochcrush!</div>':''}<div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
-    rev+
+    rev+ missHtml+
     `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
     `<button class="ghost" id="gameQuit">Back</button></div></div>`;
-  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
   $('#gameAgain').onclick=()=>{ el.classList.remove('show'); el.hidden=true; startGame(); };
   $('#gameQuit').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('choose'); };
 }
@@ -1137,7 +1147,16 @@ function renderMap(){
       if(b && track.contains(b)) startNodeGame(+b.dataset.node); });
   }
   try{ layoutMapTrail(); requestAnimationFrame(layoutMapTrail); }catch(e){}   // trail must never break the map
-  const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
+  // victory ceremony: the just-won node pops and its stars land one by one
+  const lw=state.lastWon; state.lastWon=null;
+  const lwEl = lw!=null ? track.querySelector(`.map-node[data-node="${lw}"]`) : null;
+  if(lwEl){
+    lwEl.classList.add('won-pop');
+    setTimeout(()=>lwEl.scrollIntoView({block:'center'}),0);
+    setTimeout(()=>lwEl.classList.remove('won-pop'), 2200);
+  } else {
+    const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
+  }
 }
 // Lay nodes on an organic serpentine, then draw the dotted "treasure-trail" curving through them.
 function layoutMapTrail(){
@@ -1199,12 +1218,14 @@ function startNodeGame(idx){
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');
   const ms=nodeMilestone(n);                            // the node's milestone = the round's identity
-  const gt=$('#gameTitle'); if(gt){ gt.hidden=!ms; gt.textContent=ms?ms.name:''; }
+  const parS=Math.round(pool.length*PAR_PER_PAIR);      // show the 3★ goal up front — a target you can chase
+  const gt=$('#gameTitle'); if(gt){ gt.hidden=false;
+    gt.innerHTML=(ms?`${esc(ms.name)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
     reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
-  const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
   renderGameGrid(); startGameTimer();
 }
 
