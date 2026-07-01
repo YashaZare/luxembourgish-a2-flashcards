@@ -839,6 +839,7 @@ function startGame(){
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');                                  // stops any prior game timer
+  const gt0=$('#gameTitle'); if(gt0){ gt0.hidden=true; gt0.textContent=''; }   // free play: no milestone title
   const mode = state.gameMode==='attack' ? 'attack' : 'countdown';
   state.game = { tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
     reviewed:0, newWords:0, fumbles:0, node:null, lang,
@@ -882,6 +883,7 @@ function pickTile(t,b){
   if(g.sel.kind===t.kind){ deselectTile(); selectTile(t,b); return; }   // same side → move the pick
   resolveMatch(g.sel, g.selEl, t, b);                                    // opposite sides → try the match
 }
+function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }   // haptics (Android; iOS Safari ignores)
 function resolveMatch(a, aEl, b, bEl){
   const g=state.game; if(!g||!a||!b||a.matched||b.matched) return;
   g.sel=null; g.selEl=null; aEl.classList.remove('sel'); bEl.classList.remove('sel');
@@ -894,11 +896,12 @@ function resolveMatch(a, aEl, b, bEl){
     if(global_SRS() && card){ const had=!!SRS.store.get(card.w); SRS.store.grade(card.w, struggled?SRS.GRADE.HARD:SRS.GRADE.GOOD); g.reviewed++; if(!had) g.newWords++; }
     gameFx(aEl, bEl, g.streak, hard);
     if(card){ try{ playAudio(card); }catch(e){} }
+    buzz(g.matched>=g.pairs ? [24,60,36] : 12);        // haptic tick; little celebration pattern on the last pair
     if(g.matched>=g.pairs){ winGame(); }
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
   } else {                                             // wrong → flash both; streak breaks
     g.streak=0; g.fumbles=(g.fumbles||0)+1; a._struggled=true; b._struggled=true;
-    SFX.fail();
+    SFX.fail(); buzz([8,40,8]);
     aEl.classList.add('wrong'); bEl.classList.add('wrong');
     setTimeout(()=>{ aEl.classList.remove('wrong'); bEl.classList.remove('wrong'); }, 480);
   }
@@ -1074,6 +1077,22 @@ function chapterParts(name){
   if(parts.length>1) return { eyebrow:parts[0].trim(), title:parts.slice(1).join('—').trim() };
   return { eyebrow:'', title:(name||'').trim() };
 }
+// Milestone identity (from BOOK-MILESTONES.md via milestones.js): each node gets the book
+// sub-topic it covers ("Fruit & Vegetables", "Giving Directions"), each chapter its MAJOR subject.
+function bookMS(){ return (typeof MILESTONES!=='undefined' && MILESTONES[state.book]) || null; }
+function nodeMilestone(n){
+  const M=bookMS(); if(!M) return null;
+  let best=null, bs=0;
+  for(const it of M.items){
+    const o=Math.min(n.b,it.b)-Math.max(n.a,it.a)+1;                 // page overlap
+    if(o>0){ const score=o*100-(it.b-it.a); if(score>bs){ bs=score; best=it; } }  // prefer most-specific
+  }
+  return best;
+}
+function chapterMajor(a,b){
+  const M=bookMS(); if(!M) return null;
+  return M.majors.find(mj=> Math.min(b,mj.b)>=Math.max(a,mj.a)) || null;
+}
 function renderMap(){
   const track=$('#mapTrack'); if(!track) return;
   const adv=buildMap(), stars=loadStars();
@@ -1091,19 +1110,22 @@ function renderMap(){
       const lessonNodes=adv.nodes.filter(x=>x.lesson===n.lesson);
       const done=lessonNodes.every(x=>states[x.idx].bucket==='mastered');
       const a=ln?ln[0]:n.a, b=ln?ln[1]:n.b;
+      const mj=chapterMajor(a,b);   // the chapter's MAJOR subject ("At the Supermarket")
       html+=`<div class="map-chapter${done?' done':''}">`+
         (cp.eyebrow?`<div class="mc-eyebrow">${esc(cp.eyebrow)}${done?' · ★':''}</div>`:'')+
         `<div class="mc-name">${esc(cp.title)}</div>`+
+        (mj?`<div class="mc-major">${esc(mj.name)}</div>`:'')+
         `<div class="mc-sub">Säiten ${a}–${b} · ${lessonNodes.length} Etappen</div>`+
       `</div>`;
     }
     const st=states[i], side=i%2?'right':'left', earned=stars[n.idx]||0, cur=i===curIdx;
     const ahead = i>curIdx && st.bucket==='unseen';
     const wc = n.words.reduce((m,it)=> m + (it.card && firstTr(it.card,lang) ? 1 : 0), 0);   // this node's own words
+    const ms = nodeMilestone(n);   // this node's sub-topic ("Fruit & Vegetables")
     html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
       `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${i+1}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
-      `<span class="mn-cap">Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}</span>`+
+      `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}</span>`+
       (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
     `</button>`;
   });
@@ -1176,6 +1198,8 @@ function startNodeGame(idx){
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');
+  const ms=nodeMilestone(n);                            // the node's milestone = the round's identity
+  const gt=$('#gameTitle'); if(gt){ gt.hidden=!ms; gt.textContent=ms?ms.name:''; }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
     reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
