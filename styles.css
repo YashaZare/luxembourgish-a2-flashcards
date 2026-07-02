@@ -617,7 +617,7 @@ input{font:inherit}
 /* on-map labels get a halo so they read over the busy treasure-map texture */
 .mn-cap,.mn-here,.mn-stars{text-shadow:0 1px 0 rgba(248,240,222,.95), 0 0 4px rgba(248,240,222,.85)}
 [data-theme="tactile"] .mn-cap,[data-theme="tactile"] .mn-here,[data-theme="tactile"] .mn-stars{text-shadow:0 1px 3px rgba(0,0,0,.75), 0 0 4px rgba(0,0,0,.55)}
-.mn-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+.mn-circle{position:relative;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   border:3px solid #ffffffdd;box-shadow:0 0 0 1.5px rgba(75,55,25,.25), 0 13px 22px rgba(35,22,8,.5), 0 4px 8px rgba(35,22,8,.4)}
 .mn-num{font-size:20px;font-weight:900;color:var(--ink)}
 .mn-done{font-size:26px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
@@ -660,6 +660,13 @@ input{font:inherit}
   filter:drop-shadow(0 4px 6px rgba(20,12,4,.5))}
 .map-avatar .ic{width:38px;height:38px;display:block;animation:avatarBob 1.6s ease-in-out infinite}
 @keyframes avatarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+/* per-chapter region theming: each chapter gets a signature accent hue */
+.map-node.hued .mn-circle::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+  border:2.5px solid var(--accent);opacity:.6;pointer-events:none}
+.map-node.hued.current .mn-circle::after{inset:-6px;opacity:.85;border-width:3px}
+.map-node.hued.ahead .mn-circle::after{opacity:.3}
+.map-chapter.hued{border-left:5px solid var(--accent)}
+.map-chapter.hued .mc-eyebrow,.map-chapter.hued .mc-major{color:var(--accent)}
 /* chapter-complete chest reward */
 .chest-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
   background:rgba(20,14,8,.72);opacity:0;transition:opacity .25s;padding:24px}

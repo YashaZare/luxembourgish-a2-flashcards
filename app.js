@@ -1170,6 +1170,11 @@ function chapterMajor(a,b){
   const M=bookMS(); if(!M) return null;
   return M.majors.find(mj=> Math.min(b,mj.b)>=Math.max(a,mj.a)) || null;
 }
+// per-chapter signature hue (region theming) — palette from BOOK-MILESTONES.md
+const CHAP_HUE={ a1:{1:'#6b9bd8',2:'#9b6bd8',3:'#5a7fa8',4:'#6fae6f',5:'#d9534f',6:'#d87a9e'},
+  a2:{1:'#3fb6a8',2:'#c8794e',3:'#5a6bc8',4:'#c85aa8',5:'#45c0b0',6:'#8a9a4e',7:'#6fcea0',8:'#5b7c99'} };
+function chapterHue(lessonTitle){ const m=/kapitel\s*(\d+)/i.exec(lessonTitle||'');
+  return m ? (CHAP_HUE[state.book||'a2']||{})[+m[1]]||null : null; }
 function renderMap(){
   const track=$('#mapTrack'); if(!track) return;
   const adv=buildMap(), stars=loadStars();
@@ -1198,7 +1203,8 @@ function renderMap(){
       const done=lessonNodes.every(x=>states[x.idx].bucket==='mastered');
       const a=ln?ln[0]:n.a, b=ln?ln[1]:n.b;
       const mj=chapterMajor(a,b);   // the chapter's MAJOR subject ("At the Supermarket")
-      html+=`<div class="map-chapter${done?' done':''}">`+
+      const hue=chapterHue(ln?ln[2]:'');   // this region's signature colour
+      html+=`<div class="map-chapter${done?' done':''}${hue?' hued':''}"${hue?` style="--accent:${hue}"`:''}>`+
         (cp.eyebrow?`<div class="mc-eyebrow">${esc(cp.eyebrow)}${done?' · ★':''}</div>`:'')+
         `<div class="mc-name">${esc(cp.title)}</div>`+
         (mj?`<div class="mc-major">${esc(mj.name)}</div>`:'')+
@@ -1220,7 +1226,8 @@ function renderMap(){
     }
     stage++;
     const ms = nodeMilestone(n);   // this node's sub-topic ("Fruit & Vegetables")
-    html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
+    const nhue=chapterHue((adv.lessons[n.lesson]||[])[2]||'');   // region hue → accent ring
+    html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}${nhue?' hued':''}" data-node="${n.idx}"${nhue?` style="--accent:${nhue}"`:''}>`+
       `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${stage}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
       `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}${earned>=3?' · Blëtz':earned>=2?' · Lauschter':''}</span>`+
