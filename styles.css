@@ -672,6 +672,16 @@ input{font:inherit}
 .gp-dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .gp-dot.on{background:var(--brand2)}
 [data-theme="tactile"] .game-preview{background:#232227}
+/* gender-colour tiles: LB word tiles carry the noun's gender as a coloured cap */
+.game-tile.gM{border-top:3.5px solid #6b9bd8}
+.game-tile.gF{border-top:3.5px solid #d87a9e}
+.game-tile.gN{border-top:3.5px solid #cfa04e}
+.g-legend{display:block;font-size:9.5px;font-weight:800;letter-spacing:.4px;color:var(--muted);margin-top:2px}
+.g-legend .gl{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:-1px;margin:0 4px 0 10px}
+.g-legend .gl:first-child{margin-left:0}
+.g-legend .glM{background:#6b9bd8}
+.g-legend .glF{background:#d87a9e}
+.g-legend .glN{background:#cfa04e}
 /* Lauschter round: word tiles are speakers until matched */
 .game-tile.listen .ic{width:28px;height:28px}
 [data-theme="tactile"] .game-tile.listen .ic{filter:brightness(0) invert(.92)}

@@ -858,6 +858,9 @@ function renderGameGrid(){
     b.className='game-tile '+(t.kind==='w'?'tw':'tt');
     if(t.listen){ b.classList.add('listen'); b.innerHTML='<i class="ic ic-audio-auto-play"></i>'; b.setAttribute('aria-label','Lauschter'); }
     else b.textContent=t.text;
+    // gender-colour: Luxembourgish word tiles carry their noun's gender as a coloured cap —
+    // learn den/eng/dat by absorption, not memorisation (Phase-4 mechanic)
+    if(t.kind==='w' && t.card && t.card.g && /^[MFN]$/.test(t.card.g)) b.classList.add('g'+t.card.g);
     b._tile=t; b.dataset.tag=tag(t);
     b.addEventListener('pointerdown', e=>onTilePointerDown(e,t,b));
     t.el=b; grid.appendChild(b);
@@ -1379,7 +1382,10 @@ function startNodeGame(key){
   if(listen) par*=1.3;
   const parS=Math.round(par);                           // show the 3★ goal up front — a target you can chase
   const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
-    gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
+    gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`;
+    if(pool.some(c=>c.g&&/^[MFN]$/.test(c.g)))          // gender-colour legend when the round carries genders
+      gt.innerHTML+=`<span class="g-legend"><i class="gl glM"></i>den (M)<i class="gl glF"></i>eng (F)<i class="gl glN"></i>dat (N)</span>`;
+  }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
     reviewed:0, newWords:0, newList:[], fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
