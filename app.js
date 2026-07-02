@@ -898,7 +898,7 @@ function resolveMatch(a, aEl, b, bEl){
     a.matched=true; b.matched=true; aEl.classList.add('matched'); bEl.classList.add('matched');
     g.matched++; g.streak=(g.streak||0)+1;
     const hard = card?wordIsHard(card.w):false;
-    if(global_SRS() && card){ const had=!!SRS.store.get(card.w); SRS.store.grade(card.w, struggled?SRS.GRADE.HARD:SRS.GRADE.GOOD); g.reviewed++; if(!had) g.newWords++; }
+    if(global_SRS() && card){ const had=!!SRS.store.get(card.w); SRS.store.grade(card.w, struggled?SRS.GRADE.HARD:SRS.GRADE.GOOD); g.reviewed++; if(!had){ g.newWords++; if(g.newList) g.newList.push(card.w); } }
     gameFx(aEl, bEl, g.streak, hard);
     if(card){ try{ playAudio(card); }catch(e){} }
     if(g.node!=null) questBump('words',1);             // daily quest progress
@@ -1011,16 +1011,19 @@ function showGameResult(won, val, isBest){
     missCards.slice(0,6).map((c,i)=>`<button class="gr-miss-w" data-mi="${i}" type="button"><b>${esc(c.w)}</b><small>${esc(firstTr(c,g.lang)||'')}${c.form?` · ${esc(c.form)} of ${esc(c.lemma)}`:''}</small></button>`).join('')+
     `</div></div>` : '';
   const wireMiss=()=>{ el.querySelectorAll('.gr-miss-w').forEach(b=>{ b.onclick=()=>{ const c=missCards[+b.dataset.mi]; if(c){ try{ playAudio(c); }catch(e){} } }; }); };
+  const newHtml = (won && g.newList && g.newList.length)
+    ? `<div class="gr-new">Nei geléiert: <b>${g.newList.slice(0,4).map(esc).join('</b>, <b>')}</b>${g.newList.length>4?` +${g.newList.length-4}`:''}</div>` : '';
   if(g.node!=null && won){                              // adventure-node result: stars + map nav
-    const e=g.starsEarned||1, adv=buildMap(), hasNext=g.nodePos+1<adv.nodes.length;
+    const e=g.starsEarned||1, adv=buildMap(), hasNext=g.nodePos>=0 && g.nodePos+1<adv.nodes.length;
     const nextKey=hasNext?adv.nodes[g.nodePos+1].idx:null;
     const starsHtml=[0,1,2].map(k=>`<span class="gr-star${k<e?' on':''}">★</span>`).join('');
-    const blurb = g.boss?(e===3?'Kapitel-Meeschter! Keng Feeler, blitzschnell.':'De Kapitel-Boss ass besiegt!')
+    const blurb = g.review?'All déi fälleg Wierder gepackt — Erënnerung frësch!'
+      : g.boss?(e===3?'Kapitel-Meeschter! Keng Feeler, blitzschnell.':'De Kapitel-Boss ass besiegt!')
       : e===3?'Perfekt! Allebot Wuert flott gemaach.' : e===2?'Flott — keng Feeler!' : 'Etapp fäerdeg!';
-    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">${g.boss?'BOSS BESIEGT!':'Sproochcrush!'}</div>`+
+    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">${g.review?'WIDDERHUELUNG!':g.boss?'BOSS BESIEGT!':'Sproochcrush!'}</div>`+
       `<div class="gr-stars">${starsHtml}</div>`+
-      `<div class="gr-title">${g.boss?'Kapitel ofgeschloss!':`Etapp ${g.nodePos+1} fäerdeg!`}</div>`+
-      `<div class="gr-time">${blurb}</div>`+ rev+ missHtml+
+      `<div class="gr-title">${g.review?'Widderhuelungs-Boss besiegt!':g.boss?'Kapitel ofgeschloss!':`Etapp ${g.nodePos+1} fäerdeg!`}</div>`+
+      `<div class="gr-time">${blurb}</div>`+ rev+ newHtml+ missHtml+
       `<div class="gr-btns"><button class="primary" id="gameNext"${hasNext?'':' disabled'}>Nächst Etapp →</button>`+
       `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
     el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
@@ -1031,7 +1034,7 @@ function showGameResult(won, val, isBest){
   el.innerHTML = `<div class="gr-card">${won?'<div class="gr-kicker">Sproochcrush!</div>':''}<div class="gr-emoji ic ${won?'ic-win-solved':'ic-times-up'}"></div>`+
     `<div class="gr-title">${won?'Solved!':"Time's up"}</div>`+
     `<div class="gr-time">${won?`${val.toFixed(1)}s${isBest?' <span class="gr-best">★ best!</span>':''}`:`${val} / ${g.pairs} matched`}</div>`+
-    rev+ missHtml+
+    rev+ newHtml+ missHtml+
     `<div class="gr-btns"><button class="primary" id="gameAgain">${won?'Play again':'Try again'}</button>`+
     `<button class="ghost" id="gameQuit">Back</button></div></div>`;
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
@@ -1134,6 +1137,16 @@ function renderMap(){
   const totalStars=adv.nodes.length*3, gotStars=adv.nodes.reduce((m,n)=>m+(stars[n.idx]||0),0);
   const hdr=$('#mapProgress'); if(hdr) hdr.innerHTML=`<i class="ic ic-win-solved"></i> ${gotStars}/${totalStars}`;
   let html='', lastLesson=-1, stage=0;
+  // Weekly Review Boss: pinned at the top whenever enough words are due (an FSRS event node)
+  const rbDue=reviewBossDue();
+  if(rbDue>=10){
+    const rbKey=reviewBossKey(), rbStars=stars[rbKey]||0;
+    html+=`<button class="map-node boss review" data-node="${rbKey}">`+
+      `<span class="mn-circle boss review">${rbStars?'<span class="mn-done">★</span>':'<span class="mn-boss-tag">DUE</span>'}</span>`+
+      `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<rbStars?' on':''}">★</span>`).join('')}</span>`+
+      `<span class="mn-cap"><span class="mn-name">Widderhuelungs-Boss</span>${rbDue} Wierder fälleg · dës Woch</span>`+
+    `</button>`;
+  }
   adv.nodes.forEach((n,i)=>{
     if(n.lesson!==lastLesson){
       lastLesson=n.lesson;
@@ -1299,7 +1312,39 @@ function nodeGamePool(adv, idx, lang){
   return shuffle(own.concat(borrowed));
 }
 const BOSS_TARGET_WORDS = 25;   // boss rounds are bigger: 25 pairs → 50 tiles
+// ---- Weekly Review Boss: a special event node built from your most-due FSRS words ----
+function reviewBossKey(){ const d=new Date(), j=new Date(d.getFullYear(),0,1);
+  const wk=Math.ceil((((d-j)/86400000)+j.getDay()+1)/7); return 'W'+d.getFullYear()+'-'+wk; }
+function reviewBossDue(){ if(!global_SRS()) return 0; const now=Date.now(); let n=0;
+  const lang=[...state.selLangs][0]||'en';
+  for(const c of state.data.cards){ if(!c.w||!firstTr(c,lang)) continue;
+    const r=SRS.store.get(c.w); if(r&&r.due<=now) n++; }
+  return n; }
+function startReviewBoss(){
+  ensureCtx(); const lang=[...state.selLangs][0]||'en', now=Date.now();
+  const cand=[];
+  for(const c of state.data.cards){ if(!c.w||!firstTr(c,lang)) continue;
+    const r=global_SRS()&&SRS.store.get(c.w); if(r&&r.due<=now) cand.push({c,due:r.due}); }
+  cand.sort((a,b)=>a.due-b.due);                        // most overdue first
+  const pool=[]; const seenW=new Set();
+  for(const x of cand){ if(!seenW.has(x.c.w)){ seenW.add(x.c.w); pool.push(x.c); if(pool.length>=BOSS_TARGET_WORDS) break; } }
+  if(pool.length<5) return;
+  const tiles=[];
+  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
+  show('game');
+  const gt=$('#gameTitle');
+  let par=0; for(const c of pool) par += PAR_PER_PAIR + (wordIsHard(c.w)?0.4:0);
+  if(gt){ gt.hidden=false; gt.classList.add('boss');
+    gt.innerHTML=`Widderhuelungs-Boss<br><span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${Math.round(par)}s</span>`; }
+  state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
+    reviewed:0, newWords:0, newList:[], fumbles:0, node:reviewBossKey(), nodePos:-1, boss:true, review:true, par, lang,
+    budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
+  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
+  renderGameGrid(); startGameTimer();
+}
 function startNodeGame(key){
+  if(/^W\d/.test(key)) return startReviewBoss();        // weekly review boss is its own round
   ensureCtx();
   const adv=buildMap(), n=adv.byKey[key]; if(!n) return;
   const pos=adv.nodes.indexOf(n);
@@ -1336,7 +1381,7 @@ function startNodeGame(key){
   const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
     gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par, lang,
+    reviewed:0, newWords:0, newList:[], fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
   const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
