@@ -49,7 +49,7 @@ const DATA_VERSION = '9';  // bump when flashcards.json changes (cache-busts the
 // Selectable books (same language/dictionary; per-word SRS memory is shared, but
 // adventure-map stars + match best-times are namespaced per book — see starsKey/bestKey).
 const BOOKS = {
-  a2: { file:'flashcards.json',    v:'10', label:'A2', tag:'Mëttelstuf' },
+  a2: { file:'flashcards.json',    v:'11', label:'A2', tag:'Mëttelstuf' },
   a1: { file:'flashcards-a1.json', v:'2', label:'A1', tag:'Ufänger' },
 };
 function curBook(){ return BOOKS[state.book] || BOOKS.a2; }
