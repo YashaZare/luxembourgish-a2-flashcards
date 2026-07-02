@@ -645,6 +645,9 @@ input{font:inherit}
 .gr-miss-w b{font-weight:800}
 .gr-miss-w small{font-size:10px;color:var(--muted);line-height:1.2;text-align:center}
 [data-theme="tactile"] .gr-miss-w{background:#2e2e33;border-color:#ffffff1c;box-shadow:0 2px 6px #0006}
+/* Lauschter round: word tiles are speakers until matched */
+.game-tile.listen .ic{width:28px;height:28px}
+[data-theme="tactile"] .game-tile.listen .ic{filter:brightness(0) invert(.92)}
 /* chapter BOSS nodes: bigger, burgundy ring, 'BOSS' badge */
 .mn-circle.boss{width:80px;height:80px;border:4px solid #a8383b;box-shadow:0 0 0 2px #ffffffb3, 0 13px 24px rgba(35,22,8,.5)}
 .map-node.boss.current .mn-circle{width:88px;height:88px}

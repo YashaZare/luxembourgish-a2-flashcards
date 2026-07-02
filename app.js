@@ -856,7 +856,9 @@ function renderGameGrid(){
   g.tiles.forEach(t=>{
     const b=document.createElement('button');
     b.className='game-tile '+(t.kind==='w'?'tw':'tt');
-    b.textContent=t.text; b._tile=t; b.dataset.tag=tag(t);
+    if(t.listen){ b.classList.add('listen'); b.innerHTML='<i class="ic ic-audio-auto-play"></i>'; b.setAttribute('aria-label','Lauschter'); }
+    else b.textContent=t.text;
+    b._tile=t; b.dataset.tag=tag(t);
     b.addEventListener('pointerdown', e=>onTilePointerDown(e,t,b));
     t.el=b; grid.appendChild(b);
   });
@@ -874,7 +876,8 @@ window.addEventListener('resize', ()=>{
 });
 // ---- tile interaction: tap-to-pick (tapping another same-side tile just SWITCHES the
 //      pick, no penalty), plus drag-one-onto-its-pair as a faster alternative. ----
-function selectTile(t,b){ const g=state.game; g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select(); }
+function selectTile(t,b){ const g=state.game; g.sel=t; g.selEl=b; b.classList.add('sel'); SFX.select();
+  if(t.listen && t.card){ try{ playAudio(t.card); }catch(e){} } }   // listening round: selecting a speaker plays it
 function deselectTile(){ const g=state.game; if(g&&g.selEl) g.selEl.classList.remove('sel'); if(g){ g.sel=null; g.selEl=null; } }
 function pickTile(t,b){
   const g=state.game; if(!g||g.done||t.matched) return;
@@ -890,6 +893,8 @@ function resolveMatch(a, aEl, b, bEl){
   const card=a.card||b.card;
   if(a.id===b.id){                                     // correct pair (kinds already differ)
     const struggled=!!(a._struggled||b._struggled);
+    if(a.listen) aEl.textContent=a.text;               // listening round: reveal the spelling on match
+    if(b.listen) bEl.textContent=b.text;
     a.matched=true; b.matched=true; aEl.classList.add('matched'); bEl.classList.add('matched');
     g.matched++; g.streak=(g.streak||0)+1;
     const hard = card?wordIsHard(card.w):false;
@@ -1160,7 +1165,7 @@ function renderMap(){
     html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
       `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${stage}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
-      `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}</span>`+
+      `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}${earned>=2?' · Lauschter':''}</span>`+
       (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
     `</button>`;
   });
@@ -1246,13 +1251,21 @@ function startNodeGame(key){
   } else {
     pool=nodeGamePool(adv, pos, lang);                  // own words + borrowed review, to a clean target
   }
+  // Lauschter variant: replaying a node you already hold 2★+ on → match BY EAR
+  // (word tiles become speakers; the spelling reveals when you match them).
+  let listen=false;
+  if(!n.boss && (loadStars()[n.idx]||0)>=2){
+    const withAudio=pool.filter(c=>audioId(c));
+    if(withAudio.length>=10){ pool=withAudio; listen=true; }
+  }
   if(pool.length<2){ return; }
   const tiles=[];
-  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
+  pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c,listen}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');
   const mj=n.boss?chapterMajor(n.a,n.b):null;
   const ms=n.boss?null:nodeMilestone(n);                // the node's milestone = the round's identity
-  const title = n.boss ? ('BOSS — '+(mj?mj.name:'Kapitel')) : (ms?ms.name:'');
+  const baseTitle = n.boss ? ('BOSS — '+(mj?mj.name:'Kapitel')) : (ms?ms.name:'');
+  const title = baseTitle ? baseTitle+(listen?' — Lauschter-Ronn':'') : (listen?'Lauschter-Ronn':'');
   const parS=Math.round(pool.length*PAR_PER_PAIR);      // show the 3★ goal up front — a target you can chase
   const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
     gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
