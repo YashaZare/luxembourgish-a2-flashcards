@@ -49,7 +49,7 @@ const DATA_VERSION = '9';  // bump when flashcards.json changes (cache-busts the
 // Selectable books (same language/dictionary; per-word SRS memory is shared, but
 // adventure-map stars + match best-times are namespaced per book — see starsKey/bestKey).
 const BOOKS = {
-  a2: { file:'flashcards.json',    v:'11', label:'A2', tag:'Mëttelstuf' },
+  a2: { file:'flashcards.json',    v:'12', label:'A2', tag:'Mëttelstuf' },
   a1: { file:'flashcards-a1.json', v:'2', label:'A1', tag:'Ufänger' },
 };
 function curBook(){ return BOOKS[state.book] || BOOKS.a2; }
@@ -851,6 +851,7 @@ function startGame(){
 }
 function renderGameGrid(){
   const g=state.game, grid=$('#gameGrid'); if(!grid) return;
+  const ggm=$('#genderGame'); if(ggm) ggm.hidden=true;   // not a gender round
   grid.innerHTML='';
   const tag = t=> t.kind==='w' ? 'LB' : ((g.lang||'').toUpperCase());
   g.tiles.forEach(t=>{
@@ -978,7 +979,7 @@ function startGameTimer(){
   };
   g.raf=requestAnimationFrame(tick);
 }
-function stopGame(){ const g=state.game; if(g){ if(g.raf) cancelAnimationFrame(g.raf); g.raf=null; g.done=true; } }
+function stopGame(){ const g=state.game; if(g){ if(g.raf) cancelAnimationFrame(g.raf); g.raf=null; g.done=true; } const gg=$('#genderGame'); if(gg) gg.hidden=true; }
 function winGame(){
   const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
   const elapsed = g.mode==='attack' ? (performance.now()-g.start)/1000 : (g.budget - g.remaining);
@@ -1332,6 +1333,73 @@ function nodeGamePool(adv, idx, lang){
   return shuffle(own.concat(borrowed));
 }
 const BOSS_TARGET_WORDS = 25;   // boss rounds are bigger: 25 pairs → 50 tiles
+// ---- Genderjuegd: sort a beaten chapter's nouns into den/eng/dat (M/F/N) ----
+function startGenderRound(n, pos, lang){
+  const seen=new Set(), pool=[];
+  for(const it of n.words){ const c=it.card;
+    if(c && /^[MFN]$/.test(c.g||'') && firstTr(c,lang) && !seen.has(c.w)){ seen.add(c.w); pool.push(c); } }
+  if(pool.length<6) return false;                        // not enough gendered nouns → normal boss
+  ensureCtx(); show('game');
+  const list=shuffle(pool).slice(0,16);
+  const g={ gender:true, node:n.idx, nodePos:pos, boss:true, lang, list, i:-1, correct:0, fumbles:0,
+            reviewed:0, newWords:0, newList:[], start:performance.now(), done:false };
+  state.game=g;
+  const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.add('boss'); gt.classList.remove('blitz');
+    gt.innerHTML=`Genderjuegd — ${esc((chapterMajor(n.a,n.b)||{}).name||'Kapitel')}<br><span class="gt-target">Sortéier all Substantiv: den / eng / dat</span>`; }
+  $('#gameGrid').innerHTML=''; $('#gameClock').hidden=true;
+  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
+  const gg=$('#genderGame'); gg.hidden=false;
+  gg.querySelectorAll('.gg-b').forEach(b=> b.onclick=()=>genderAnswer(b.dataset.g, b));
+  genderNext();
+  return true;
+}
+function genderNext(){
+  const g=state.game; if(!g||!g.gender) return;
+  g.i++;
+  const bar=$('#gameBar'); if(bar) bar.style.width=(g.i/g.list.length*100)+'%';
+  if(g.i>=g.list.length){ genderFinish(); return; }
+  const c=g.list[g.i]; g.locked=false;
+  $('#ggCount').textContent=`${g.i+1} / ${g.list.length}`;
+  $('#ggWord').textContent=c.w;
+  $('#ggTr').textContent=firstTr(c,g.lang)||'';
+  $('#genderGame').querySelectorAll('.gg-b').forEach(b=>b.classList.remove('right','wrong','dim'));
+}
+function genderAnswer(choice, btn){
+  const g=state.game; if(!g||!g.gender||g.locked) return; g.locked=true;
+  const c=g.list[g.i], ok=choice===c.g;
+  const gg=$('#genderGame');
+  if(ok){ g.correct++; btn.classList.add('right'); SFX.select(); buzz(12); }
+  else { g.fumbles++; btn.classList.add('wrong'); SFX.fail(); buzz([8,40,8]);
+    const right=gg.querySelector('.gg-'+c.g); if(right) right.classList.add('right'); }
+  gg.querySelectorAll('.gg-b').forEach(b=>{ if(!b.classList.contains('right')&&!b.classList.contains('wrong')) b.classList.add('dim'); });
+  if(global_SRS()){ const had=!!SRS.store.get(c.w); SRS.store.grade(c.w, ok?SRS.GRADE.GOOD:SRS.GRADE.HARD);
+    g.reviewed++; if(!had){ g.newWords++; g.newList.push(c.w); } if(!ok) c._struggled=true; }
+  setTimeout(genderNext, ok?420:900);
+}
+function genderFinish(){
+  const g=state.game; g.done=true;
+  const elapsed=(performance.now()-g.start)/1000, perfect=g.fumbles===0;
+  const earned = !perfect ? 1 : (elapsed<=g.list.length*2.4 ? 3 : 2);
+  const stars=loadStars(); const prev=stars[g.node]||0; g.starsEarned=Math.max(earned,prev);
+  if(earned>prev){ stars[g.node]=earned; saveStars(stars); }
+  state.lastWon=g.node; questBump('rounds',1); questBump('stars',earned); questBump('words',g.correct);
+  endReviewSession(); $('#genderGame').hidden=true;
+  finaleSound(); praiseBanner('Genderjuegd!', true); buzz([24,60,36]);
+  const el=$('#gameResult');
+  const missCards=g.list.filter(c=>c._struggled);
+  const miss = missCards.length ? `<div class="gr-miss"><div class="gr-miss-h">Nach eng Kéier kucken</div><div class="gr-miss-list">`+
+    missCards.slice(0,6).map((c,i)=>`<button class="gr-miss-w" data-mi="${i}" type="button"><b>${esc(c.g==='M'?'den':c.g==='F'?'eng':'dat')} ${esc(c.w)}</b><small>${esc(firstTr(c,g.lang)||'')}</small></button>`).join('')+`</div></div>` : '';
+  const starsHtml=[0,1,2].map(k=>`<span class="gr-star${k<earned?' on':''}">★</span>`).join('');
+  el.innerHTML=`<div class="gr-card"><div class="gr-kicker">GENDERJUEGD!</div><div class="gr-stars">${starsHtml}</div>`+
+    `<div class="gr-title">${g.correct} / ${g.list.length} richteg</div>`+
+    `<div class="gr-time">${perfect?'Alles richteg — den/eng/dat sëtzt!':'Gutt gemaach!'}</div>`+ miss+
+    `<div class="gr-btns"><button class="primary" id="gameAgain">Nach eng Kéier →</button>`+
+    `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  el.querySelectorAll('.gr-miss-w').forEach(b=>{ b.onclick=()=>{ const c=missCards[+b.dataset.mi]; if(c){ try{ playAudio(c); }catch(e){} } }; });
+  const adv=buildMap(); $('#gameAgain').onclick=()=>{ el.classList.remove('show'); el.hidden=true; startNodeGame(g.node); };
+  $('#gameMap').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('map'); };
+}
 // ---- Weekly Review Boss: a special event node built from your most-due FSRS words ----
 function reviewBossKey(){ const d=new Date(), j=new Date(d.getFullYear(),0,1);
   const wk=Math.ceil((((d-j)/86400000)+j.getDay()+1)/7); return 'W'+d.getFullYear()+'-'+wk; }
@@ -1369,6 +1437,7 @@ function startNodeGame(key){
   const adv=buildMap(), n=adv.byKey[key]; if(!n) return;
   const pos=adv.nodes.indexOf(n);
   const lang=[...state.selLangs][0]||'en';
+  if(n.boss && (loadStars()[n.idx]||0)>=1 && startGenderRound(n,pos,lang)) return;   // beaten boss → Genderjuegd
   let pool;
   if(n.boss){                                           // boss: the whole chapter's words, due-first
     const cards=n.words.map(it=>it.card).filter(c=>firstTr(c,lang));
