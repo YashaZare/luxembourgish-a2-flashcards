@@ -1266,15 +1266,49 @@ function startNodeGame(key){
   const ms=n.boss?null:nodeMilestone(n);                // the node's milestone = the round's identity
   const baseTitle = n.boss ? ('BOSS — '+(mj?mj.name:'Kapitel')) : (ms?ms.name:'');
   const title = baseTitle ? baseTitle+(listen?' — Lauschter-Ronn':'') : (listen?'Lauschter-Ronn':'');
-  const parS=Math.round(pool.length*PAR_PER_PAIR);      // show the 3★ goal up front — a target you can chase
+  // Adaptive par: unseen words and hard words earn extra seconds; listening by ear earns 30% more.
+  // 3★ stays equally fair on a node full of new vocabulary as on a review node.
+  let par=0;
+  for(const c of pool){ const seen=global_SRS()&&SRS.store.get(c.w);
+    par += PAR_PER_PAIR + (seen?0:1.2) + (wordIsHard(c.w)?0.4:0); }
+  if(listen) par*=1.3;
+  const parS=Math.round(par);                           // show the 3★ goal up front — a target you can chase
   const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
     gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par:pool.length*PAR_PER_PAIR, lang,
+    reviewed:0, newWords:0, fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
   const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
-  renderGameGrid(); startGameTimer();
+  // First visit (0★, not a listening round): flip through the unseen words before the board —
+  // pre-exposure before retrieval, so the round teaches instead of punishing.
+  const newbies = (!listen && !(loadStars()[n.idx]>0))
+    ? pool.filter(c=>!(global_SRS()&&SRS.store.get(c.w))).slice(0,8) : [];
+  if(newbies.length>=3){
+    const gg=$('#gameGrid'); if(gg) gg.innerHTML='';    // clear any stale board under the preview
+    showWordPreview(newbies, ()=>{ renderGameGrid(); startGameTimer(); });
+  }
+  else { renderGameGrid(); startGameTimer(); }
+}
+// The pre-round word flip: word + meaning + audio, auto-advancing; 'Lass!' skips straight in.
+function showWordPreview(cards, done){
+  const el=$('#gamePreview'); if(!el){ done(); return; }
+  const lang=[...state.selLangs][0]||'en';
+  let i=-1, t=null, fin=false;
+  const finish=()=>{ if(fin) return; fin=true; clearTimeout(t); el.hidden=true; el.classList.remove('show'); done(); };
+  const step=()=>{
+    if($('#game').classList.contains('hidden')){ clearTimeout(t); el.hidden=true; return; }  // player left
+    i++; if(i>=cards.length){ finish(); return; }
+    const c=cards[i];
+    $('#gpWord').textContent=c.w;
+    $('#gpTr').textContent=firstTr(c,lang)||'';
+    $('#gpDots').innerHTML=cards.map((_,k)=>`<span class="gp-dot${k<=i?' on':''}"></span>`).join('');
+    try{ playAudio(c); }catch(e){}
+    t=setTimeout(step, 2300);
+  };
+  $('#gpGo').onclick=finish;
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  step();
 }
 
 // ---- spaced repetition: memory summary + "review due" ----

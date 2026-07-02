@@ -15,7 +15,7 @@
 <script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
 if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
 document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
-<link rel="stylesheet" href="styles.css?v=0.65">
+<link rel="stylesheet" href="styles.css?v=0.66">
 </head>
 <body>
 <div id="app">
@@ -103,7 +103,7 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
         browser (localStorage) and are never sent anywhere.</p>
         <p>Not affiliated with or endorsed by the publisher of the course book. For personal educational use.</p>
       </details>
-      <div class="app-version">v0.65 · beta</div>
+      <div class="app-version">v0.66 · beta</div>
     </footer>
   </section>
 
@@ -255,6 +255,14 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
       <div class="game-clock" id="gameClock" hidden>0.0s</div>
     </div>
     <div class="game-title" id="gameTitle" hidden></div>
+    <!-- first-visit word preview: flip through the node's unseen words before the board -->
+    <div class="game-preview" id="gamePreview" hidden>
+      <div class="gp-kicker">Nei Wierder op dëser Etapp</div>
+      <div class="gp-word" id="gpWord"></div>
+      <div class="gp-tr" id="gpTr"></div>
+      <div class="gp-dots" id="gpDots"></div>
+      <button class="primary" id="gpGo" type="button">Lass! →</button>
+    </div>
     <div class="game-grid" id="gameGrid"></div>
     <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
     <div class="game-result" id="gameResult" hidden></div>
@@ -311,9 +319,9 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=0.65"></script>
-<script src="milestones.js?v=0.65"></script>
-<script src="progress.js?v=0.65"></script>
-<script src="app.js?v=0.65"></script>
+<script src="srs.js?v=0.66"></script>
+<script src="milestones.js?v=0.66"></script>
+<script src="progress.js?v=0.66"></script>
+<script src="app.js?v=0.66"></script>
 </body>
 </html>

@@ -645,6 +645,18 @@ input{font:inherit}
 .gr-miss-w b{font-weight:800}
 .gr-miss-w small{font-size:10px;color:var(--muted);line-height:1.2;text-align:center}
 [data-theme="tactile"] .gr-miss-w{background:#2e2e33;border-color:#ffffff1c;box-shadow:0 2px 6px #0006}
+/* first-visit word preview: flip-through of the node's new words */
+.game-preview{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;background:var(--bg);opacity:0;transition:opacity .25s;padding:24px;text-align:center}
+.game-preview[hidden]{display:none}          /* author display:flex would otherwise defeat [hidden] */
+.game-preview.show{opacity:1}
+.gp-kicker{font-size:11px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;color:var(--brand2)}
+.gp-word{font-size:40px;font-weight:900;color:var(--ink);line-height:1.1;word-break:break-word}
+.gp-tr{font-size:17px;color:var(--muted);min-height:24px}
+.gp-dots{display:flex;gap:5px;margin:4px 0 8px}
+.gp-dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.gp-dot.on{background:var(--brand2)}
+[data-theme="tactile"] .game-preview{background:#232227}
 /* Lauschter round: word tiles are speakers until matched */
 .game-tile.listen .ic{width:28px;height:28px}
 [data-theme="tactile"] .game-tile.listen .ic{filter:brightness(0) invert(.92)}
