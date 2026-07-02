@@ -1242,6 +1242,13 @@ function renderMap(){
       if(b && track.contains(b)) startNodeGame(b.dataset.node); });   // keys may be numeric or 'B<n>' (boss)
   }
   try{ layoutMapTrail(); requestAnimationFrame(layoutMapTrail); }catch(e){}   // trail must never break the map
+  // floating 'jump to your node' button — the long-path aid for a 130-node map
+  const jb=$('#mapJump');
+  if(jb && !jb._wired){ jb._wired=1;
+    jb.onclick=()=>{ const c=$('#mapTrack .map-node.current'); if(c) c.scrollIntoView({block:'center',behavior:'smooth'}); };
+    window.addEventListener('scroll', ()=>{ if(!$('#map').classList.contains('hidden')) updateMapJump(); }, {passive:true});
+  }
+  requestAnimationFrame(updateMapJump);
   // chapter-complete chest: if the just-won node cleared its whole chapter (all nodes + boss ≥1★),
   // pop a one-time reward. Checked before the ceremony clears state.lastWon.
   if(state.lastWon!=null){ const won=adv.byKey[state.lastWon];
@@ -1312,6 +1319,16 @@ function renderQuest(){
     `<span class="mq-count">${q.prog}/${q.goal}</span>`+
     `<span class="mq-bar"><span class="mq-fill" style="width:${pct}%"></span></span>`;
   el.classList.toggle('done', done);
+}
+// show the 'jump to current node' button only when your node is off-screen; arrow points the way
+function updateMapJump(){
+  const btn=$('#mapJump'), cur=$('#mapTrack .map-node.current');
+  if(!btn) return;
+  if(!cur){ btn.hidden=true; return; }
+  const r=cur.getBoundingClientRect(), vh=window.innerHeight, arr=btn.querySelector('.mj-arrow');
+  if(r.bottom<70){ btn.hidden=false; if(arr) arr.textContent='↑'; }
+  else if(r.top>vh-70){ btn.hidden=false; if(arr) arr.textContent='↓'; }
+  else btn.hidden=true;
 }
 // Lay nodes on an organic serpentine, then draw the dotted "treasure-trail" curving through them.
 function layoutMapTrail(){

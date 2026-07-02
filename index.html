@@ -15,7 +15,7 @@
 <script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
 if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
 document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
-<link rel="stylesheet" href="styles.css?v=0.73">
+<link rel="stylesheet" href="styles.css?v=0.74">
 </head>
 <body>
 <div id="app">
@@ -103,7 +103,7 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
         browser (localStorage) and are never sent anywhere.</p>
         <p>Not affiliated with or endorsed by the publisher of the course book. For personal educational use.</p>
       </details>
-      <div class="app-version">v0.73 · beta</div>
+      <div class="app-version">v0.74 · beta</div>
     </footer>
   </section>
 
@@ -288,6 +288,7 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
     </header>
     <div class="map-quest" id="mapQuest"></div>
     <div class="map-track" id="mapTrack"></div>
+    <button class="map-jump" id="mapJump" type="button" hidden aria-label="Sprang op deng Etapp"><span class="mj-arrow">↓</span><span class="mj-txt">hei</span></button>
     <!-- chapter-complete chest reward -->
     <div class="chest-overlay" id="chestOverlay" hidden>
       <div class="chest-card">
@@ -341,9 +342,9 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=0.73"></script>
-<script src="milestones.js?v=0.73"></script>
-<script src="progress.js?v=0.73"></script>
-<script src="app.js?v=0.73"></script>
+<script src="srs.js?v=0.74"></script>
+<script src="milestones.js?v=0.74"></script>
+<script src="progress.js?v=0.74"></script>
+<script src="app.js?v=0.74"></script>
 </body>
 </html>

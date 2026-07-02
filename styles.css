@@ -660,6 +660,14 @@ input{font:inherit}
   filter:drop-shadow(0 4px 6px rgba(20,12,4,.5))}
 .map-avatar .ic{width:38px;height:38px;display:block;animation:avatarBob 1.6s ease-in-out infinite}
 @keyframes avatarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+/* floating 'jump to current node' button (long-path aid) */
+.map-jump{position:fixed;right:16px;bottom:calc(var(--safe-b) + 18px);z-index:6;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:0;width:52px;height:52px;border-radius:50%;border:none;
+  background:var(--brand2);color:#fff;box-shadow:0 8px 22px rgba(0,0,0,.42);cursor:pointer}
+.map-jump[hidden]{display:none}
+.mj-arrow{font-size:20px;font-weight:900;line-height:.9}
+.mj-txt{font-size:9px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.map-jump:active{transform:scale(.92)}
 /* per-chapter region theming: each chapter gets a signature accent hue */
 .map-node.hued .mn-circle::after{content:"";position:absolute;inset:-5px;border-radius:50%;
   border:2.5px solid var(--accent);opacity:.6;pointer-events:none}
