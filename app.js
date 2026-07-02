@@ -1005,17 +1005,19 @@ function showGameResult(won, val, isBest){
     `</div></div>` : '';
   const wireMiss=()=>{ el.querySelectorAll('.gr-miss-w').forEach(b=>{ b.onclick=()=>{ const c=missCards[+b.dataset.mi]; if(c){ try{ playAudio(c); }catch(e){} } }; }); };
   if(g.node!=null && won){                              // adventure-node result: stars + map nav
-    const e=g.starsEarned||1, adv=buildMap(), hasNext=g.node+1<adv.nodes.length;
+    const e=g.starsEarned||1, adv=buildMap(), hasNext=g.nodePos+1<adv.nodes.length;
+    const nextKey=hasNext?adv.nodes[g.nodePos+1].idx:null;
     const starsHtml=[0,1,2].map(k=>`<span class="gr-star${k<e?' on':''}">★</span>`).join('');
-    const blurb = e===3?'Perfekt! Allebot Wuert flott gemaach.' : e===2?'Flott — keng Feeler!' : 'Etapp fäerdeg!';
-    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">Sproochcrush!</div>`+
+    const blurb = g.boss?(e===3?'Kapitel-Meeschter! Keng Feeler, blitzschnell.':'De Kapitel-Boss ass besiegt!')
+      : e===3?'Perfekt! Allebot Wuert flott gemaach.' : e===2?'Flott — keng Feeler!' : 'Etapp fäerdeg!';
+    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">${g.boss?'BOSS BESIEGT!':'Sproochcrush!'}</div>`+
       `<div class="gr-stars">${starsHtml}</div>`+
-      `<div class="gr-title">Etapp ${g.node+1} fäerdeg!</div>`+
+      `<div class="gr-title">${g.boss?'Kapitel ofgeschloss!':`Etapp ${g.nodePos+1} fäerdeg!`}</div>`+
       `<div class="gr-time">${blurb}</div>`+ rev+ missHtml+
       `<div class="gr-btns"><button class="primary" id="gameNext"${hasNext?'':' disabled'}>Nächst Etapp →</button>`+
       `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
     el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
-    $('#gameNext').onclick=()=>{ el.classList.remove('show'); el.hidden=true; if(hasNext) startNodeGame(g.node+1); };
+    $('#gameNext').onclick=()=>{ el.classList.remove('show'); el.hidden=true; if(hasNext) startNodeGame(nextKey); };
     $('#gameMap').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('map'); };
     return;
   }
@@ -1069,7 +1071,19 @@ function buildMap(){
     }
   }
   nodes.forEach((n,i)=>n.idx=i);
-  d._adv={ nodes, lessons:lr };
+  // BOSS nodes: one per real chapter, inserted after its last node. Keys are 'B<lesson>' so
+  // existing per-index star progress never shifts. A boss owns ALL the chapter's words.
+  const CHAP=/kapitel/i;
+  for(let i=nodes.length-1;i>=0;i--){
+    const li=nodes[i].lesson;
+    if(!CHAP.test((lr[li]&&lr[li][2])||'')) continue;
+    if(nodes[i+1] && nodes[i+1].lesson===li) continue;           // only after the chapter's LAST node
+    const chWords=[]; const seenW=new Set();
+    for(const nd of nodes){ if(nd.lesson===li && !nd.boss) for(const it of nd.words){ if(!seenW.has(it.w)){ seenW.add(it.w); chWords.push(it); } } }
+    nodes.splice(i+1, 0, { boss:true, lesson:li, idx:'B'+li, a:lr[li][0], b:lr[li][1], words:chWords });
+  }
+  const byKey={}; nodes.forEach(n=>byKey[n.idx]=n);
+  d._adv={ nodes, lessons:lr, byKey };
   return d._adv;
 }
 // per-node mastery, reusing the heatmap's colour buckets
@@ -1112,7 +1126,7 @@ function renderMap(){
   // header progress: stars earned / total
   const totalStars=adv.nodes.length*3, gotStars=adv.nodes.reduce((m,n)=>m+(stars[n.idx]||0),0);
   const hdr=$('#mapProgress'); if(hdr) hdr.innerHTML=`<i class="ic ic-win-solved"></i> ${gotStars}/${totalStars}`;
-  let html='', lastLesson=-1;
+  let html='', lastLesson=-1, stage=0;
   adv.nodes.forEach((n,i)=>{
     if(n.lesson!==lastLesson){
       lastLesson=n.lesson;
@@ -1131,9 +1145,20 @@ function renderMap(){
     const st=states[i], side=i%2?'right':'left', earned=stars[n.idx]||0, cur=i===curIdx;
     const ahead = i>curIdx && st.bucket==='unseen';
     const wc = n.words.reduce((m,it)=> m + (it.card && firstTr(it.card,lang) ? 1 : 0), 0);   // this node's own words
+    if(n.boss){                                          // chapter boss: the gate at the chapter's end
+      const mj=chapterMajor(n.a,n.b);
+      html+=`<button class="map-node boss ${side} b-${st.bucket}${cur?' current':''}" data-node="${n.idx}">`+
+        `<span class="mn-circle boss b-${st.bucket}">${earned?'<span class="mn-done">★</span>':'<span class="mn-boss-tag">BOSS</span>'}</span>`+
+        `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
+        `<span class="mn-cap"><span class="mn-name">Boss${mj?': '+esc(mj.name):''}</span>ganzt Kapitel · ${Math.min(BOSS_TARGET_WORDS,wc)} Wierder</span>`+
+        (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
+      `</button>`;
+      return;
+    }
+    stage++;
     const ms = nodeMilestone(n);   // this node's sub-topic ("Fruit & Vegetables")
     html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
-      `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${i+1}</span>`}</span>`+
+      `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${stage}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
       `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}</span>`+
       (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
@@ -1144,7 +1169,7 @@ function renderMap(){
   // the circle/number/stars too) instead of per-node onclick. Bound once.
   if(!track._nodeTap){ track._nodeTap=true;
     track.addEventListener('click', e=>{ const b=e.target.closest && e.target.closest('.map-node');
-      if(b && track.contains(b)) startNodeGame(+b.dataset.node); });
+      if(b && track.contains(b)) startNodeGame(b.dataset.node); });   // keys may be numeric or 'B<n>' (boss)
   }
   try{ layoutMapTrail(); requestAnimationFrame(layoutMapTrail); }catch(e){}   // trail must never break the map
   // victory ceremony: the just-won node pops and its stars land one by one
@@ -1208,21 +1233,31 @@ function nodeGamePool(adv, idx, lang){
   const borrowed=hard.slice(0,nHard).concat(easy, hard.slice(nHard)).slice(0, need);
   return shuffle(own.concat(borrowed));
 }
-function startNodeGame(idx){
+const BOSS_TARGET_WORDS = 25;   // boss rounds are bigger: 25 pairs → 50 tiles
+function startNodeGame(key){
   ensureCtx();
-  const adv=buildMap(), n=adv.nodes[idx]; if(!n) return;
+  const adv=buildMap(), n=adv.byKey[key]; if(!n) return;
+  const pos=adv.nodes.indexOf(n);
   const lang=[...state.selLangs][0]||'en';
-  const pool=nodeGamePool(adv, idx, lang);              // own words + borrowed review, to a clean target
+  let pool;
+  if(n.boss){                                           // boss: the whole chapter's words, due-first
+    const cards=n.words.map(it=>it.card).filter(c=>firstTr(c,lang));
+    pool=seedReviewPool(cards, Math.min(BOSS_TARGET_WORDS, cards.length));
+  } else {
+    pool=nodeGamePool(adv, pos, lang);                  // own words + borrowed review, to a clean target
+  }
   if(pool.length<2){ return; }
   const tiles=[];
   pool.forEach((c,i)=>{ tiles.push({id:i,kind:'w',text:c.w,card:c}); tiles.push({id:i,kind:'t',text:firstTr(c,lang),card:c}); });
   show('game');
-  const ms=nodeMilestone(n);                            // the node's milestone = the round's identity
+  const mj=n.boss?chapterMajor(n.a,n.b):null;
+  const ms=n.boss?null:nodeMilestone(n);                // the node's milestone = the round's identity
+  const title = n.boss ? ('BOSS — '+(mj?mj.name:'Kapitel')) : (ms?ms.name:'');
   const parS=Math.round(pool.length*PAR_PER_PAIR);      // show the 3★ goal up front — a target you can chase
-  const gt=$('#gameTitle'); if(gt){ gt.hidden=false;
-    gt.innerHTML=(ms?`${esc(ms.name)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
+  const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
+    gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`; }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, fumbles:0, node:idx, par:pool.length*PAR_PER_PAIR, lang,
+    reviewed:0, newWords:0, fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par:pool.length*PAR_PER_PAIR, lang,
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
   const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
