@@ -693,6 +693,7 @@ input{font:inherit}
 [data-theme="tactile"] .mn-circle.boss{border-color:#c9494d;box-shadow:0 0 0 2px #00000066, 0 13px 24px #000c}
 [data-theme="tactile"] .map-node.boss .mn-name{color:#f0a8aa}
 .game-title.boss{color:#c9494d;letter-spacing:1px}
+.game-title.blitz{color:#cfa04e;letter-spacing:1px}
 /* weekly review boss: violet event medallion at the top of the map */
 .mn-circle.boss.review{border-color:#6d5aa8;background:#efe9fb}
 [data-theme="tactile"] .mn-circle.boss.review{border-color:#8a75cc;background:#3a3352}

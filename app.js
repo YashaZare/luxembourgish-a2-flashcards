@@ -1001,7 +1001,9 @@ function winGame(){
 }
 function timeUp(){ const g=state.game; g.done=true; if(g.raf) cancelAnimationFrame(g.raf);
   endReviewSession();
-  const bar=$('#gameBar'); if(bar) bar.style.width='0%'; SFX.lose(); showGameResult(false, g.matched); }
+  const bar=$('#gameBar'); if(bar) bar.style.width='0%';
+  if(g.lightning){ SFX.win(); buzz([24,60,36]); } else SFX.lose();   // lightning: time-up IS the finish line
+  showGameResult(false, g.matched); }
 // a finished game is a finished review session — recompute mastery/progress
 function endReviewSession(){ if(window.Progress) Progress.invalidate(); }
 function showGameResult(won, val, isBest){
@@ -1016,6 +1018,21 @@ function showGameResult(won, val, isBest){
   const wireMiss=()=>{ el.querySelectorAll('.gr-miss-w').forEach(b=>{ b.onclick=()=>{ const c=missCards[+b.dataset.mi]; if(c){ try{ playAudio(c); }catch(e){} } }; }); };
   const newHtml = (won && g.newList && g.newList.length)
     ? `<div class="gr-new">Nei geléiert: <b>${g.newList.slice(0,4).map(esc).join('</b>, <b>')}</b>${g.newList.length>4?` +${g.newList.length-4}`:''}</div>` : '';
+  if(g.lightning){                                      // lightning result: pair count vs record
+    const key='lb_blitz_best_'+(state.book==='a1'?'a1_':'')+g.node;
+    const prev=+localStorage.getItem(key)||0, isB=g.matched>prev;
+    if(isB){ try{ localStorage.setItem(key, g.matched); }catch(e){} }
+    el.innerHTML = `<div class="gr-card"><div class="gr-kicker">BLËTZ!</div>`+
+      `<div class="gr-title">${g.matched} Puer an 60s${won?' — Buedem eidel!':''}</div>`+
+      `<div class="gr-time">${isB?'Neie Rekord!':(prev?`Rekord: ${prev} Puer`:'Éischt Blëtz-Ronn!')}</div>`+
+      rev+ missHtml+
+      `<div class="gr-btns"><button class="primary" id="gameAgain">Nach eng Kéier →</button>`+
+      `<button class="ghost" id="gameMap">Zréck op d'Kaart</button></div></div>`;
+    el.hidden=false; requestAnimationFrame(()=>el.classList.add('show')); wireMiss();
+    $('#gameAgain').onclick=()=>{ el.classList.remove('show'); el.hidden=true; startNodeGame(g.node); };
+    $('#gameMap').onclick=()=>{ el.classList.remove('show'); el.hidden=true; show('map'); };
+    return;
+  }
   if(g.node!=null && won){                              // adventure-node result: stars + map nav
     const e=g.starsEarned||1, adv=buildMap(), hasNext=g.nodePos>=0 && g.nodePos+1<adv.nodes.length;
     const nextKey=hasNext?adv.nodes[g.nodePos+1].idx:null;
@@ -1183,7 +1200,7 @@ function renderMap(){
     html+=`<button class="map-node ${side} b-${st.bucket}${cur?' current':''}${ahead?' ahead':''}" data-node="${n.idx}">`+
       `<span class="mn-circle b-${st.bucket}">${st.bucket==='mastered'?'<span class="mn-done">★</span>':`<span class="mn-num">${stage}</span>`}</span>`+
       `<span class="mn-stars">${[0,1,2].map(k=>`<span class="mn-star${k<earned?' on':''}">★</span>`).join('')}</span>`+
-      `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}${earned>=2?' · Lauschter':''}</span>`+
+      `<span class="mn-cap">${ms?`<span class="mn-name">${esc(ms.name)}</span>`:''}Säit ${n.a===n.b?n.a:n.a+'–'+n.b} · ${wc} Wierder${st.due?` · ${st.due} fälleg`:''}${earned>=3?' · Blëtz':earned>=2?' · Lauschter':''}</span>`+
       (cur?`<span class="mn-here">Dir sidd hei</span>`:'')+
     `</button>`;
   });
@@ -1359,10 +1376,12 @@ function startNodeGame(key){
   } else {
     pool=nodeGamePool(adv, pos, lang);                  // own words + borrowed review, to a clean target
   }
-  // Lauschter variant: replaying a node you already hold 2★+ on → match BY EAR
-  // (word tiles become speakers; the spelling reveals when you match them).
-  let listen=false;
-  if(!n.boss && (loadStars()[n.idx]||0)>=2){
+  // Round variants by mastery: 2★ replay → Lauschter (match by ear);
+  // 3★ replay → Blëtz (60-second lightning: as many pairs as you can).
+  let listen=false, lightning=false;
+  const stEarned = n.boss ? 0 : (loadStars()[n.idx]||0);
+  if(stEarned>=3){ lightning=true; }
+  else if(stEarned===2){
     const withAudio=pool.filter(c=>audioId(c));
     if(withAudio.length>=10){ pool=withAudio; listen=true; }
   }
@@ -1373,7 +1392,8 @@ function startNodeGame(key){
   const mj=n.boss?chapterMajor(n.a,n.b):null;
   const ms=n.boss?null:nodeMilestone(n);                // the node's milestone = the round's identity
   const baseTitle = n.boss ? ('BOSS — '+(mj?mj.name:'Kapitel')) : (ms?ms.name:'');
-  const title = baseTitle ? baseTitle+(listen?' — Lauschter-Ronn':'') : (listen?'Lauschter-Ronn':'');
+  const variant = listen?'Lauschter-Ronn' : lightning?'Blëtz-Ronn' : '';
+  const title = baseTitle ? baseTitle+(variant?' — '+variant:'') : variant;
   // Adaptive par: unseen words and hard words earn extra seconds; listening by ear earns 30% more.
   // 3★ stays equally fair on a node full of new vocabulary as on a review node.
   let par=0;
@@ -1381,19 +1401,20 @@ function startNodeGame(key){
     par += PAR_PER_PAIR + (seen?0:1.2) + (wordIsHard(c.w)?0.4:0); }
   if(listen) par*=1.3;
   const parS=Math.round(par);                           // show the 3★ goal up front — a target you can chase
-  const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss);
-    gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">3★ = keng Feeler · ënner ${parS}s</span>`;
+  const gt=$('#gameTitle'); if(gt){ gt.hidden=false; gt.classList.toggle('boss',!!n.boss); gt.classList.toggle('blitz',lightning);
+    gt.innerHTML=(title?`${esc(title)}<br>`:'')+`<span class="gt-target" id="gtTarget">${lightning?'60s — sou vill Puer wéi méiglech!':`3★ = keng Feeler · ënner ${parS}s`}</span>`;
     if(pool.some(c=>c.g&&/^[MFN]$/.test(c.g)))          // gender-colour legend when the round carries genders
       gt.innerHTML+=`<span class="g-legend"><i class="gl glM"></i>den (M)<i class="gl glF"></i>eng (F)<i class="gl glN"></i>dat (N)</span>`;
   }
   state.game={ tiles:shuffle(tiles), sel:null, selEl:null, matched:0, pairs:pool.length, streak:0,
-    reviewed:0, newWords:0, newList:[], fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, par, lang,
-    budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
-  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
-  const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
+    reviewed:0, newWords:0, newList:[], fumbles:0, node:n.idx, nodePos:pos, boss:!!n.boss, lightning, par, lang,
+    budget: lightning?60:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null,
+    count:pool.length*2, mode: lightning?'countdown':'attack', done:false };
+  const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.toggle('fill',!lightning); bar.style.width=lightning?'100%':'0%'; }
+  const clk=$('#gameClock'); if(clk){ clk.hidden=lightning; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
   // First visit (0★, not a listening round): flip through the unseen words before the board —
   // pre-exposure before retrieval, so the round teaches instead of punishing.
-  const newbies = (!listen && !(loadStars()[n.idx]>0))
+  const newbies = (!listen && !lightning && !(loadStars()[n.idx]>0))
     ? pool.filter(c=>!(global_SRS()&&SRS.store.get(c.w))).slice(0,8) : [];
   if(newbies.length>=3){
     const gg=$('#gameGrid'); if(gg) gg.innerHTML='';    // clear any stale board under the preview
