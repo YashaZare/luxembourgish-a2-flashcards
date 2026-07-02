@@ -1071,6 +1071,28 @@ const NODE_TARGET = 20;          // ~words per node (tunable)
 const PAR_PER_PAIR = 2.8;        // seconds/pair under which a flawless run earns the 3rd star
 // per-book stars (A2 keeps its original key so existing progress survives)
 function starsKey(){ return state.book==='a1' ? 'lb_map_stars_a1' : 'lb_map_stars_v1'; }
+// ---- chapter-complete chest ----
+function chestsKey(){ return 'lb_chests_'+(state.book||'a2'); }
+function maybeChest(adv, lesson, stars){
+  const lr=adv.lessons||[];
+  if(!/kapitel/i.test((lr[lesson]&&lr[lesson][2])||'')) return;       // real chapters only
+  const nodes=adv.nodes.filter(n=>n.lesson===lesson);
+  if(!nodes.length || !nodes.every(n=>(stars[n.idx]||0)>=1)) return;  // every node (incl boss) cleared
+  let claimed={}; try{ claimed=JSON.parse(localStorage.getItem(chestsKey()))||{}; }catch(e){}
+  if(claimed[lesson]) return;                                         // one-time
+  claimed[lesson]=1; try{ localStorage.setItem(chestsKey(), JSON.stringify(claimed)); }catch(e){}
+  const gained=nodes.reduce((m,n)=>m+(stars[n.idx]||0),0), max=nodes.length*3;
+  const mj=chapterMajor(nodes[0].a, nodes[nodes.length-1].b);
+  showChest(mj?mj.name:'Kapitel', gained, max);
+}
+function showChest(name, gained, max){
+  const el=$('#chestOverlay'); if(!el) return;
+  $('#chestTitle').textContent=name;
+  $('#chestReward').innerHTML=`<span class="cr-stars">★ ${gained}/${max}</span>`;
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));   // lid pop is a CSS animation on .show
+  finaleSound(); buzz([30,50,30,50,60]);
+  $('#chestClaim').onclick=()=>{ el.classList.remove('show'); setTimeout(()=>el.hidden=true,250); };
+}
 function loadStars(){ try{ return JSON.parse(localStorage.getItem(starsKey()))||{}; }catch(e){ return {}; } }
 function saveStars(s){ try{ localStorage.setItem(starsKey(), JSON.stringify(s)); }catch(e){} }
 
@@ -1213,6 +1235,10 @@ function renderMap(){
       if(b && track.contains(b)) startNodeGame(b.dataset.node); });   // keys may be numeric or 'B<n>' (boss)
   }
   try{ layoutMapTrail(); requestAnimationFrame(layoutMapTrail); }catch(e){}   // trail must never break the map
+  // chapter-complete chest: if the just-won node cleared its whole chapter (all nodes + boss ≥1★),
+  // pop a one-time reward. Checked before the ceremony clears state.lastWon.
+  if(state.lastWon!=null){ const won=adv.byKey[state.lastWon];
+    if(won && won.lesson!=null) maybeChest(adv, won.lesson, stars); }
   // victory ceremony: the just-won node pops and its stars land one by one
   const lw=state.lastWon; state.lastWon=null;
   const lwEl = lw!=null ? track.querySelector(`.map-node[data-node="${lw}"]`) : null;
