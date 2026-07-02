@@ -645,6 +645,21 @@ input{font:inherit}
 .gr-miss-w b{font-weight:800}
 .gr-miss-w small{font-size:10px;color:var(--muted);line-height:1.2;text-align:center}
 [data-theme="tactile"] .gr-miss-w{background:#2e2e33;border-color:#ffffff1c;box-shadow:0 2px 6px #0006}
+/* daily quest bar (map) + traveler avatar */
+.map-quest{display:flex;align-items:center;gap:8px;max-width:360px;margin:2px auto 8px;padding:7px 12px;border-radius:12px;
+  background:#fbf3dfea;border:1px solid #e0cda3;box-shadow:0 3px 10px rgba(80,60,30,.14);position:relative;z-index:2}
+.map-quest .ic{width:18px;height:18px;flex:none}
+.mq-label{font-size:12px;font-weight:800;color:var(--ink);flex:1;line-height:1.2}
+.mq-count{font-size:11px;font-weight:900;color:var(--brand2)}
+.mq-bar{flex:none;width:64px;height:7px;border-radius:7px;background:#00000014;overflow:hidden}
+.mq-fill{display:block;height:100%;border-radius:7px;background:var(--brand2);transition:width .4s}
+.map-quest.done{border-color:var(--brand2)}
+[data-theme="tactile"] .map-quest{background:#2a241dee;border-color:#ffffff1a;box-shadow:0 3px 10px #0006}
+[data-theme="tactile"] .mq-bar{background:#ffffff14}
+.map-avatar{position:absolute;z-index:4;width:38px;height:38px;margin:-44px 0 0 -19px;pointer-events:none;
+  filter:drop-shadow(0 4px 6px rgba(20,12,4,.5))}
+.map-avatar .ic{width:38px;height:38px;display:block;animation:avatarBob 1.6s ease-in-out infinite}
+@keyframes avatarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 /* first-visit word preview: flip-through of the node's new words */
 .game-preview{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:12px;background:var(--bg);opacity:0;transition:opacity .25s;padding:24px;text-align:center}

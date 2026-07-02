@@ -901,6 +901,7 @@ function resolveMatch(a, aEl, b, bEl){
     if(global_SRS() && card){ const had=!!SRS.store.get(card.w); SRS.store.grade(card.w, struggled?SRS.GRADE.HARD:SRS.GRADE.GOOD); g.reviewed++; if(!had) g.newWords++; }
     gameFx(aEl, bEl, g.streak, hard);
     if(card){ try{ playAudio(card); }catch(e){} }
+    if(g.node!=null) questBump('words',1);             // daily quest progress
     buzz(g.matched>=g.pairs ? [24,60,36] : 12);        // haptic tick; little celebration pattern on the last pair
     if(g.matched>=g.pairs){ winGame(); }
     else { gameMatchSound(g.streak, hard); const pr=praiseFor(g.streak); if(pr) praiseBanner(pr); }
@@ -988,6 +989,7 @@ function winGame(){
     const stars=loadStars(); g.starsPrev=stars[g.node]||0; g.starsEarned=earned;
     if(earned>g.starsPrev){ stars[g.node]=earned; saveStars(stars); }
     state.lastWon=g.node;                    // → the map celebrates this node on next render
+    questBump('rounds',1); questBump('stars',earned);    // daily quest progress
   }
   endReviewSession();
   finaleSound();                                   // rising "Sproochcrush" arpeggio
@@ -1182,11 +1184,67 @@ function renderMap(){
   const lwEl = lw!=null ? track.querySelector(`.map-node[data-node="${lw}"]`) : null;
   if(lwEl){
     lwEl.classList.add('won-pop');
+    _avatarHoldEl=lwEl;                                  // avatar waits on the beaten node…
     setTimeout(()=>lwEl.scrollIntoView({block:'center'}),0);
+    setTimeout(()=>{ _avatarHoldEl=null; positionAvatar(lwEl); }, 1350);   // …then hops to the next one
     setTimeout(()=>lwEl.classList.remove('won-pop'), 2200);
   } else {
     const curEl=$('#mapTrack .map-node.current'); if(curEl) setTimeout(()=>curEl.scrollIntoView({block:'center'}),0);
   }
+  renderQuest();
+}
+// ---- traveler avatar: the little brand mascot standing on your current node ----
+let _avatarHoldEl=null;   // during a victory ceremony the avatar waits on the beaten node, then hops
+function positionAvatar(hopFromEl){
+  const track=$('#mapTrack'); if(!track) return;
+  const curC=track.querySelector('.map-node.current .mn-circle');
+  let av=$('#mapAvatar');
+  if(!curC){ if(av) av.remove(); return; }
+  if(!av){ av=document.createElement('div'); av.id='mapAvatar'; av.className='map-avatar';
+    av.innerHTML='<i class="ic ic-brand-app"></i>'; track.appendChild(av); }
+  const tr=track.getBoundingClientRect();
+  const at=el=>{ const r=el.getBoundingClientRect(); return {x:r.left-tr.left+r.width/2, y:r.top-tr.top}; };
+  const dst=at(curC);
+  const src=hopFromEl && hopFromEl.querySelector('.mn-circle');
+  if(src){                                              // hop: start on the beaten node, glide to the next
+    const s=at(src);
+    av.style.transition='none'; av.style.left=s.x+'px'; av.style.top=s.y+'px';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      av.style.transition='left .9s cubic-bezier(.55,-.25,.35,1.25), top .9s cubic-bezier(.55,-.25,.35,1.25)';
+      av.style.left=dst.x+'px'; av.style.top=dst.y+'px';
+    }));
+  } else { av.style.transition='none'; av.style.left=dst.x+'px'; av.style.top=dst.y+'px'; }
+}
+// ---- daily quest: one rotating goal per day, progressed by adventure play ----
+const QUESTS=[ {t:'stars', goal:5,  label:'Sammel haut 5 Stären'},
+               {t:'rounds',goal:3,  label:'Gewann haut 3 Ronnen'},
+               {t:'words', goal:40, label:'Match haut 40 Wierder'} ];
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function loadQuest(){
+  let q=null; try{ q=JSON.parse(localStorage.getItem('lb_daily_quest')); }catch(e){}
+  const today=todayKey();
+  if(!q || q.date!==today){
+    const def=QUESTS[new Date().getDate()%QUESTS.length];
+    q={date:today, t:def.t, goal:def.goal, label:def.label, prog:0};
+    try{ localStorage.setItem('lb_daily_quest', JSON.stringify(q)); }catch(e){}
+  }
+  return q;
+}
+function questBump(kind, n){
+  const q=loadQuest(); if(q.t!==kind || q.prog>=q.goal) return;
+  q.prog=Math.min(q.goal, q.prog+n);
+  try{ localStorage.setItem('lb_daily_quest', JSON.stringify(q)); }catch(e){}
+  renderQuest();
+  if(q.prog>=q.goal){ praiseBanner('Deeglech Aufgab fäerdeg!', true); buzz([24,60,36]); }
+}
+function renderQuest(){
+  const el=$('#mapQuest'); if(!el) return;
+  const q=loadQuest(), done=q.prog>=q.goal, pct=Math.min(100, q.prog/q.goal*100);
+  el.innerHTML=`<i class="ic ${done?'ic-win-solved':'ic-streak'}"></i>`+
+    `<span class="mq-label">${done?'Deeglech Aufgab fäerdeg!':esc(q.label)}</span>`+
+    `<span class="mq-count">${q.prog}/${q.goal}</span>`+
+    `<span class="mq-bar"><span class="mq-fill" style="width:${pct}%"></span></span>`;
+  el.classList.toggle('done', done);
 }
 // Lay nodes on an organic serpentine, then draw the dotted "treasure-trail" curving through them.
 function layoutMapTrail(){
@@ -1217,6 +1275,8 @@ function layoutMapTrail(){
   const holes=pts.map(p=>'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="40" fill="#000"/>').join('');
   svg.innerHTML='<defs><mask id="trailMask"><rect width="'+W+'" height="'+H+'" fill="#fff"/>'+holes+'</mask></defs>'
     +'<g mask="url(#trailMask)"><path d="'+d+'" class="trail-line"/><path d="'+d+'" class="trail-dots"/></g>';
+  positionAvatar(null); if(_avatarHoldEl){ const s=_avatarHoldEl.querySelector('.mn-circle'), av=$('#mapAvatar'), tr2=track.getBoundingClientRect();
+    if(s&&av){ const r=s.getBoundingClientRect(); av.style.transition='none'; av.style.left=(r.left-tr2.left+r.width/2)+'px'; av.style.top=(r.top-tr2.top)+'px'; } }
 }
 const GAME_TARGET_WORDS = 20;   // node games aim for this many pairs → a clean, full board (40 tiles)
 // A node's game word-set: its own words, padded up to GAME_TARGET_WORDS with REVIEW words borrowed
