@@ -15,7 +15,7 @@
 <script>try{var _K='lux-fc-settings',_F='lux-fc-default-tactile',_s=JSON.parse(localStorage.getItem(_K)||'{}');
 if(!localStorage.getItem(_F)){_s.theme='tactile';localStorage.setItem(_K,JSON.stringify(_s));localStorage.setItem(_F,'1');} /* one-time: switch everyone to the new default */
 document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e){document.documentElement.setAttribute('data-theme','tactile');}</script>
-<link rel="stylesheet" href="styles.css?v=0.74">
+<link rel="stylesheet" href="styles.css?v=0.75">
 </head>
 <body>
 <div id="app">
@@ -103,7 +103,7 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
         browser (localStorage) and are never sent anywhere.</p>
         <p>Not affiliated with or endorsed by the publisher of the course book. For personal educational use.</p>
       </details>
-      <div class="app-version">v0.74 · beta</div>
+      <div class="app-version">v0.75 · beta</div>
     </footer>
   </section>
 
@@ -264,6 +264,13 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
       <button class="primary" id="gpGo" type="button">Lass! →</button>
     </div>
     <div class="game-grid" id="gameGrid"></div>
+    <!-- first-time round-type coach mark -->
+    <div class="round-intro" id="roundIntro" hidden>
+      <div class="ri-badge" id="riBadge"></div>
+      <div class="ri-title" id="riTitle"></div>
+      <div class="ri-body" id="riBody"></div>
+      <button class="primary" id="riGo" type="button">Lass! →</button>
+    </div>
     <!-- gender-bucket round (Genderjuegd): sort a noun into den/eng/dat -->
     <div class="gender-game" id="genderGame" hidden>
       <div class="gg-count" id="ggCount"></div>
@@ -342,9 +349,9 @@ document.documentElement.setAttribute('data-theme',_s.theme||'tactile');}catch(e
 
   <div id="loading" class="loading">Loading vocabulary…</div>
 </div>
-<script src="srs.js?v=0.74"></script>
-<script src="milestones.js?v=0.74"></script>
-<script src="progress.js?v=0.74"></script>
-<script src="app.js?v=0.74"></script>
+<script src="srs.js?v=0.75"></script>
+<script src="milestones.js?v=0.75"></script>
+<script src="progress.js?v=0.75"></script>
+<script src="app.js?v=0.75"></script>
 </body>
 </html>

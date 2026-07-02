@@ -1383,6 +1383,25 @@ function nodeGamePool(adv, idx, lang){
   return shuffle(own.concat(borrowed));
 }
 const BOSS_TARGET_WORDS = 25;   // boss rounds are bigger: 25 pairs → 50 tiles
+// ---- first-time round-type coach marks ----
+const ROUND_INTROS={
+  boss:   {badge:'⚔️',title:'BOSS',       body:'De ganze Kapitel op eemol! Match all d’Puren fir d’Kapitel ofzeschléissen.'},
+  listen: {badge:'🔊',title:'Lauschter-Ronn', body:'Tipp op e Lautsprecher, lauschter gutt, a fann d’Wuert dat dozou passt.'},
+  lightning:{badge:'⚡',title:'Blëtz-Ronn', body:'60 Sekonnen! Match sou vill Puer wéi méiglech — keen Zäitdrock fir Feeler.'},
+  gender: {badge:'⚥',title:'Genderjuegd', body:'Sortéier all Substantiv a säi Genre: den (M), eng (F), oder dat (N).'},
+  review: {badge:'🔁',title:'Widderhuelungs-Boss', body:'Deng fällegst Wierder aus dem ganze Buch — hal deng Erënnerung frësch!'},
+};
+function seenIntros(){ try{ return JSON.parse(localStorage.getItem('lb_seen_intros'))||{}; }catch(e){ return {}; } }
+function roundIntro(key, go){
+  const info=ROUND_INTROS[key], seen=seenIntros();
+  if(!info || seen[key]){ go(); return; }
+  seen[key]=1; try{ localStorage.setItem('lb_seen_intros', JSON.stringify(seen)); }catch(e){}
+  const el=$('#roundIntro'); if(!el){ go(); return; }
+  $('#riBadge').textContent=info.badge; $('#riTitle').textContent=info.title; $('#riBody').textContent=info.body;
+  const gg=$('#gameGrid'); if(gg) gg.innerHTML='';
+  el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  $('#riGo').onclick=()=>{ el.classList.remove('show'); el.hidden=true; go(); };
+}
 // ---- Genderjuegd: sort a beaten chapter's nouns into den/eng/dat (M/F/N) ----
 function startGenderRound(n, pos, lang){
   const seen=new Set(), pool=[];
@@ -1398,9 +1417,9 @@ function startGenderRound(n, pos, lang){
     gt.innerHTML=`Genderjuegd — ${esc((chapterMajor(n.a,n.b)||{}).name||'Kapitel')}<br><span class="gt-target">Sortéier all Substantiv: den / eng / dat</span>`; }
   $('#gameGrid').innerHTML=''; $('#gameClock').hidden=true;
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
-  const gg=$('#genderGame'); gg.hidden=false;
+  const gg=$('#genderGame');
   gg.querySelectorAll('.gg-b').forEach(b=> b.onclick=()=>genderAnswer(b.dataset.g, b));
-  genderNext();
+  roundIntro('gender', ()=>{ gg.hidden=false; genderNext(); });   // first-time coach mark
   return true;
 }
 function genderNext(){
@@ -1479,7 +1498,7 @@ function startReviewBoss(){
     budget:Math.max(20,pool.length*5), remaining:0, elapsed:0, start:0, raf:null, count:pool.length*2, mode:'attack', done:false };
   const bar=$('#gameBar'); if(bar){ bar.classList.remove('low'); bar.classList.add('fill'); bar.style.width='0%'; }
   const clk=$('#gameClock'); if(clk){ clk.hidden=false; clk.textContent='0.0s'; clk.classList.remove('over-par'); }
-  renderGameGrid(); startGameTimer();
+  roundIntro('review', ()=>{ renderGameGrid(); startGameTimer(); });   // first-time coach mark
 }
 function startNodeGame(key){
   if(/^W\d/.test(key)) return startReviewBoss();        // weekly review boss is its own round
@@ -1535,11 +1554,14 @@ function startNodeGame(key){
   // pre-exposure before retrieval, so the round teaches instead of punishing.
   const newbies = (!listen && !lightning && !(loadStars()[n.idx]>0))
     ? pool.filter(c=>!(global_SRS()&&SRS.store.get(c.w))).slice(0,8) : [];
-  if(newbies.length>=3){
-    const gg=$('#gameGrid'); if(gg) gg.innerHTML='';    // clear any stale board under the preview
-    showWordPreview(newbies, ()=>{ renderGameGrid(); startGameTimer(); });
-  }
-  else { renderGameGrid(); startGameTimer(); }
+  const begin=()=>{
+    if(newbies.length>=3){
+      const gg=$('#gameGrid'); if(gg) gg.innerHTML='';    // clear any stale board under the preview
+      showWordPreview(newbies, ()=>{ renderGameGrid(); startGameTimer(); });
+    } else { renderGameGrid(); startGameTimer(); }
+  };
+  const introKey = listen?'listen' : lightning?'lightning' : (n.boss?'boss':null);
+  if(introKey) roundIntro(introKey, begin); else begin();   // first-time coach mark for special rounds
 }
 // The pre-round word flip: word + meaning + audio, auto-advancing; 'Lass!' skips straight in.
 function showWordPreview(cards, done){

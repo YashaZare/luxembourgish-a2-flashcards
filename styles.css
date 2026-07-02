@@ -690,6 +690,16 @@ input{font:inherit}
 .chest-title{font-size:24px;font-weight:900;color:var(--ink);line-height:1.15;margin:4px 0 8px}
 .chest-reward{margin-bottom:16px}
 .cr-stars{font-size:16px;font-weight:900;color:#f2b736}
+/* first-time round-type coach mark */
+.round-intro{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:30px 26px;text-align:center;background:var(--bg);opacity:0;transition:opacity .22s}
+.round-intro[hidden]{display:none}
+.round-intro.show{opacity:1}
+.ri-badge{font-size:56px;line-height:1}
+.ri-title{font-size:24px;font-weight:900;letter-spacing:.5px;color:var(--brand2)}
+.ri-body{font-size:15px;line-height:1.5;color:var(--muted);max-width:320px}
+.round-intro .primary{margin-top:8px}
+[data-theme="tactile"] .round-intro{background:#232227}
 /* Genderjuegd — sort a noun into den/eng/dat */
 .gender-game{position:absolute;left:0;right:0;top:64px;bottom:0;z-index:20;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:14px;padding:24px 20px;text-align:center}
