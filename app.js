@@ -1175,6 +1175,12 @@ const CHAP_HUE={ a1:{1:'#6b9bd8',2:'#9b6bd8',3:'#5a7fa8',4:'#6fae6f',5:'#d9534f'
   a2:{1:'#3fb6a8',2:'#c8794e',3:'#5a6bc8',4:'#c85aa8',5:'#45c0b0',6:'#8a9a4e',7:'#6fcea0',8:'#5b7c99'} };
 function chapterHue(lessonTitle){ const m=/kapitel\s*(\d+)/i.exec(lessonTitle||'');
   return m ? (CHAP_HUE[state.book||'a2']||{})[+m[1]]||null : null; }
+// chapter hero banner (Codex art) — file named k<N>-<slug-of-major>.webp
+function chapterHeroURL(k, name){
+  if(k==null || !name) return null;
+  const slug=name.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  return `img/adventure/${state.book||'a2'}/hero/k${k}-${slug}.webp`;
+}
 function renderMap(){
   const track=$('#mapTrack'); if(!track) return;
   const adv=buildMap(), stars=loadStars();
@@ -1204,7 +1210,9 @@ function renderMap(){
       const a=ln?ln[0]:n.a, b=ln?ln[1]:n.b;
       const mj=chapterMajor(a,b);   // the chapter's MAJOR subject ("At the Supermarket")
       const hue=chapterHue(ln?ln[2]:'');   // this region's signature colour
-      html+=`<div class="map-chapter${done?' done':''}${hue?' hued':''}"${hue?` style="--accent:${hue}"`:''}>`+
+      const hero=mj?chapterHeroURL(mj.k, mj.name):null;   // Codex hero banner for the region
+      html+=`<div class="map-chapter${done?' done':''}${hue?' hued':''}${hero?' has-hero':''}"${hue?` style="--accent:${hue}"`:''}>`+
+        (hero?`<img class="mc-hero" src="${hero}" alt="" onerror="this.remove();this.parentNode.classList.remove('has-hero')">`:'')+
         (cp.eyebrow?`<div class="mc-eyebrow">${esc(cp.eyebrow)}${done?' · ★':''}</div>`:'')+
         `<div class="mc-name">${esc(cp.title)}</div>`+
         (mj?`<div class="mc-major">${esc(mj.name)}</div>`:'')+

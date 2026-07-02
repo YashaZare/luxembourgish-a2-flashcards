@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 rsync -az --stats \
-  --exclude='.git/' --exclude='node_modules/' --exclude='img/adventure/' \
-  --exclude='*.ai' --exclude='.DS_Store' --exclude='.assetsignore' \
+  --exclude='.git/' --exclude='node_modules/' \
+  --exclude='_preview/' --exclude='_masters/' --exclude='raster/' --exclude='*.ai' --exclude='.DS_Store' --exclude='.assetsignore' \
   ./ admin@91.98.87.216:/home/admin/letzebuergesch/
 echo "✅ deployed to letzebuergesch.special.lu (Hetzner)"

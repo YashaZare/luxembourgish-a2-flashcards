@@ -674,6 +674,10 @@ input{font:inherit}
 .map-node.hued.current .mn-circle::after{inset:-6px;opacity:.85;border-width:3px}
 .map-node.hued.ahead .mn-circle::after{opacity:.3}
 .map-chapter.hued{border-left:5px solid var(--accent)}
+/* chapter hero banner (Codex art) as the region header */
+.map-chapter.has-hero{padding-top:0;overflow:hidden}
+.mc-hero{display:block;width:calc(100% + 20px);height:118px;object-fit:cover;margin:0 -10px 8px;
+  border-bottom:2px solid var(--accent, transparent)}
 .map-chapter.hued .mc-eyebrow,.map-chapter.hued .mc-major{color:var(--accent)}
 /* chapter-complete chest reward */
 .chest-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
